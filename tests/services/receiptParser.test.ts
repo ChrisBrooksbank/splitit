@@ -87,10 +87,10 @@ TOTAL               $42.66
     expect(result.lineItems).toHaveLength(3)
     expect(result.lineItems[0].quantity).toBe(2)
     expect(result.lineItems[0].name).toBe('Chicken Wings')
-    expect(result.lineItems[0].price).toBe(1200)
+    expect(result.lineItems[0].price).toBe(600) // $12.00 / 2 = $6.00 unit price
     expect(result.lineItems[1].quantity).toBe(3)
     expect(result.lineItems[1].name).toBe('Draft Beer')
-    expect(result.lineItems[1].price).toBe(1800)
+    expect(result.lineItems[1].price).toBe(600) // $18.00 / 3 = $6.00 unit price
     expect(result.lineItems[2].quantity).toBe(1)
   })
 
@@ -207,7 +207,7 @@ TOTAL                 $31.86
     const result = parseReceipt(text)
     expect(result.lineItems[0].quantity).toBe(2)
     expect(result.lineItems[0].name).toBe('Margarita Pizza')
-    expect(result.lineItems[0].price).toBe(2200)
+    expect(result.lineItems[0].price).toBe(1100) // $22.00 / 2 = $11.00 unit price
   })
 
   // --- Sample 9: Tip and discount lines not parsed as items ---

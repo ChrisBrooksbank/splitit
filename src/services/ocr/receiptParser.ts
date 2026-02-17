@@ -145,10 +145,15 @@ function extractLineItem(line: string): LineItem | null {
   let confidence = hasCurrencySymbol ? HIGH_CONFIDENCE : MEDIUM_CONFIDENCE
   if (hadOcrFix) confidence = LOW_CONFIDENCE
 
+  // The price on the receipt line is the line total (e.g. "2 X Soup  16.00"
+  // means 16.00 for both soups). Divide by quantity to get the unit price,
+  // since the rest of the app treats `price` as unit price.
+  const unitPrice = quantity > 1 ? Math.round(cents / quantity) : cents
+
   return {
     id: nanoid(),
     name,
-    price: cents,
+    price: unitPrice,
     quantity,
     confidence,
     manuallyEdited: false,
