@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { formatCurrency } from '../../utils/formatCurrency'
 import type { PersonTip } from '../../store/tipStore'
 
-const PRESET_PERCENTAGES = [15, 18, 20, 25]
+const PRESET_PERCENTAGES = [0, 10, 12.5, 15]
 
 interface TipSelectorProps {
   tip: PersonTip

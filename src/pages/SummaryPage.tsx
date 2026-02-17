@@ -179,7 +179,7 @@ export default function SummaryPage() {
       assignments: new Map(Object.entries(assignments)),
       tipConfig: {
         mode: 'per-person' as const,
-        percentage: 20,
+        percentage: 12.5,
         fixedAmount: 0,
       },
       totals: splitResult.personTotals,

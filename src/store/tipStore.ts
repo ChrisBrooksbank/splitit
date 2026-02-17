@@ -30,7 +30,7 @@ interface TipStore {
   reset: () => void
 }
 
-const DEFAULT_TIP_PERCENTAGE = 20
+const DEFAULT_TIP_PERCENTAGE = 12.5
 
 const initialState = {
   personTips: {} as Record<string, PersonTip>,

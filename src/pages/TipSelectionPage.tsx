@@ -137,7 +137,7 @@ export default function TipSelectionPage() {
               Choose one tip % for everyone
             </p>
             <div className="flex gap-2">
-              {[15, 18, 20, 25].map((pct) => (
+              {[0, 10, 12.5, 15].map((pct) => (
                 <button
                   key={pct}
                   onClick={() => setAllPercentage(pct)}
