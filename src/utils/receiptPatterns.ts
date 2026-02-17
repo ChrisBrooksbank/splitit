@@ -4,7 +4,7 @@
 
 // Price at the end of a line: $12.99, 12.99, $1,234.56
 // Also allows leading OCR-corrupted digits (l/I in place of 1): $l2.99
-export const PRICE_PATTERN = /\$?\s*([lIO\d]{1,4}[,.]?[lIO\d]{0,3}[.,]\d{2})\s*$/
+export const PRICE_PATTERN = /[£$]?\s*([lIO\d]{1,4}[,.]?[lIO\d]{0,3}[.,]\d{2})\s*$/
 
 // Price with possible OCR digit errors (l/I → 1, O/o → 0) before parsing
 // Applied to a candidate price string only
@@ -66,7 +66,7 @@ export function parsePriceCents(raw: string): number | null {
   let fixed = raw.replace(OCR_DIGIT_FIX, '1').replace(OCR_ZERO_FIX, '0')
 
   // Remove currency symbol and spaces
-  fixed = fixed.replace(/[$\s]/g, '')
+  fixed = fixed.replace(/[£$\s]/g, '')
 
   // Remove thousand separators (commas before 3 digits before decimal)
   // Handles formats like 1,234.56 → 123456 cents

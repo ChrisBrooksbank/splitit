@@ -34,14 +34,22 @@ export default function StepIndicator({ currentRoute }: StepIndicatorProps) {
               <div
                 className={[
                   'w-2 h-2 rounded-full transition-all duration-300',
-                  isCompleted ? 'bg-gray-900' : isCurrent ? 'bg-gray-900' : 'bg-gray-300',
+                  isCompleted
+                    ? 'bg-gray-900 dark:bg-gray-100'
+                    : isCurrent
+                      ? 'bg-gray-900 dark:bg-gray-100'
+                      : 'bg-gray-300 dark:bg-gray-600',
                 ].join(' ')}
                 aria-hidden="true"
               />
               <span
                 className={[
                   'text-[10px] font-medium leading-none transition-colors duration-300',
-                  isCurrent ? 'text-gray-900' : isCompleted ? 'text-gray-500' : 'text-gray-300',
+                  isCurrent
+                    ? 'text-gray-900 dark:text-gray-100'
+                    : isCompleted
+                      ? 'text-gray-500 dark:text-gray-400'
+                      : 'text-gray-300 dark:text-gray-600',
                 ].join(' ')}
                 aria-current={isCurrent ? 'step' : undefined}
               >
@@ -54,7 +62,7 @@ export default function StepIndicator({ currentRoute }: StepIndicatorProps) {
               <div
                 className={[
                   'h-px w-8 mx-1.5 mb-3.5 transition-all duration-300',
-                  isCompleted ? 'bg-gray-900' : 'bg-gray-200',
+                  isCompleted ? 'bg-gray-900 dark:bg-gray-100' : 'bg-gray-200 dark:bg-gray-600',
                 ].join(' ')}
                 aria-hidden="true"
               />

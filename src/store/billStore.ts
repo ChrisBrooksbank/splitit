@@ -5,7 +5,6 @@ import type { LineItem } from '../types'
 
 interface BillStore {
   lineItems: LineItem[]
-  taxAmount: number // integer cents
 
   // Line item CRUD
   setLineItems: (items: LineItem[]) => void
@@ -13,16 +12,12 @@ interface BillStore {
   updateLineItem: (id: string, updates: Partial<Omit<LineItem, 'id'>>) => void
   deleteLineItem: (id: string) => void
 
-  // Tax
-  setTaxAmount: (amount: number) => void
-
   // Reset
   reset: () => void
 }
 
 const initialState = {
   lineItems: [] as LineItem[],
-  taxAmount: 0,
 }
 
 export const useBillStore = create<BillStore>()(
@@ -48,8 +43,6 @@ export const useBillStore = create<BillStore>()(
         set((state) => ({
           lineItems: state.lineItems.filter((item) => item.id !== id),
         })),
-
-      setTaxAmount: (amount) => set({ taxAmount: amount }),
 
       reset: () => set(initialState),
     }),

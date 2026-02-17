@@ -8,7 +8,7 @@ function makeItem(overrides: Partial<LineItem> = {}): LineItem {
   return {
     id: 'item-1',
     name: 'Burger',
-    price: 1299, // $12.99
+    price: 1299, // £12.99
     quantity: 1,
     confidence: 1.0,
     manuallyEdited: false,
@@ -32,7 +32,7 @@ describe('LineItemRow', () => {
 
     it('renders price formatted as currency', () => {
       renderRow(makeItem({ price: 1299 }))
-      expect(screen.getByText('$12.99')).toBeInTheDocument()
+      expect(screen.getByText('£12.99')).toBeInTheDocument()
     })
 
     it('shows quantity prefix when qty > 1', () => {
@@ -42,8 +42,8 @@ describe('LineItemRow', () => {
 
     it('shows total price (price × qty) for multi-quantity items', () => {
       renderRow(makeItem({ quantity: 2, price: 500 }))
-      // 2 × $5.00 = $10.00
-      expect(screen.getByText('$10.00')).toBeInTheDocument()
+      // 2 × £5.00 = £10.00
+      expect(screen.getByText('£10.00')).toBeInTheDocument()
     })
 
     it('does not show quantity prefix for single items', () => {
@@ -82,55 +82,55 @@ describe('LineItemRow', () => {
     })
   })
 
-  describe('inline editing', () => {
-    it('enters edit mode when row is clicked', async () => {
+  describe('modal editing', () => {
+    it('opens edit modal when row is clicked', async () => {
       const user = userEvent.setup()
       renderRow(makeItem())
       await user.click(screen.getByRole('button', { name: /edit burger/i }))
-      expect(screen.getByLabelText(/item name/i)).toBeInTheDocument()
+      expect(screen.getByRole('dialog', { name: 'Edit Item' })).toBeInTheDocument()
     })
 
-    it('enters edit mode via keyboard Enter', async () => {
+    it('opens edit modal via keyboard Enter', async () => {
       const user = userEvent.setup()
       renderRow(makeItem())
       const rowBtn = screen.getByRole('button', { name: /edit burger/i })
       rowBtn.focus()
       await user.keyboard('{Enter}')
-      expect(screen.getByLabelText(/item name/i)).toBeInTheDocument()
+      expect(screen.getByRole('dialog', { name: 'Edit Item' })).toBeInTheDocument()
     })
 
     it('pre-fills name input with current name', async () => {
       const user = userEvent.setup()
       renderRow(makeItem({ name: 'Pasta' }))
       await user.click(screen.getByRole('button', { name: /edit pasta/i }))
-      expect(screen.getByLabelText(/item name/i)).toHaveValue('Pasta')
+      expect(screen.getByLabelText('Item name')).toHaveValue('Pasta')
     })
 
-    it('pre-fills price input with current price in dollars', async () => {
+    it('pre-fills price input with current price in pounds', async () => {
       const user = userEvent.setup()
       renderRow(makeItem({ price: 899 }))
       await user.click(screen.getByRole('button', { name: /edit burger/i }))
-      expect(screen.getByLabelText(/price in dollars/i)).toHaveValue(8.99)
+      expect(screen.getByLabelText('Price')).toHaveValue(8.99)
     })
 
     it('pre-fills quantity input', async () => {
       const user = userEvent.setup()
       renderRow(makeItem({ quantity: 3 }))
       await user.click(screen.getByRole('button', { name: /edit burger/i }))
-      expect(screen.getByLabelText(/quantity/i)).toHaveValue(3)
+      expect(screen.getByLabelText('Qty')).toHaveValue(3)
     })
 
-    it('calls onUpdate with updated values when Done is clicked', async () => {
+    it('calls onUpdate with updated values when Save Changes is clicked', async () => {
       const user = userEvent.setup()
       const { onUpdate } = renderRow(makeItem({ id: 'item-1', name: 'Burger', price: 1299 }))
 
       await user.click(screen.getByRole('button', { name: /edit burger/i }))
 
-      const nameInput = screen.getByLabelText(/item name/i)
+      const nameInput = screen.getByLabelText('Item name')
       await user.clear(nameInput)
       await user.type(nameInput, 'Cheeseburger')
 
-      await user.click(screen.getByRole('button', { name: /save changes/i }))
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }))
 
       expect(onUpdate).toHaveBeenCalledOnce()
       expect(onUpdate).toHaveBeenCalledWith(
@@ -139,41 +139,46 @@ describe('LineItemRow', () => {
       )
     })
 
-    it('converts dollar price input to integer cents on save', async () => {
+    it('converts price input to integer cents on save', async () => {
       const user = userEvent.setup()
       const { onUpdate } = renderRow(makeItem({ id: 'item-1', price: 1299 }))
 
       await user.click(screen.getByRole('button', { name: /edit burger/i }))
 
-      const priceInput = screen.getByLabelText(/price in dollars/i)
+      const priceInput = screen.getByLabelText('Price')
       await user.clear(priceInput)
       await user.type(priceInput, '7.50')
 
-      await user.click(screen.getByRole('button', { name: /save changes/i }))
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }))
 
       expect(onUpdate).toHaveBeenCalledWith('item-1', expect.objectContaining({ price: 750 }))
     })
 
-    it('exits edit mode when Escape is pressed', async () => {
+    it('closes modal when close button is clicked', async () => {
       const user = userEvent.setup()
       renderRow(makeItem())
       await user.click(screen.getByRole('button', { name: /edit burger/i }))
-      expect(screen.getByLabelText(/item name/i)).toBeInTheDocument()
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
 
-      await user.keyboard('{Escape}')
-      expect(screen.queryByLabelText(/item name/i)).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Close' }))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
 
-    it('saves when Enter is pressed in name input', async () => {
+    it('shows delete button in modal', async () => {
       const user = userEvent.setup()
-      const { onUpdate } = renderRow(makeItem({ id: 'item-1' }))
+      renderRow(makeItem())
+      await user.click(screen.getByRole('button', { name: /edit burger/i }))
+      expect(screen.getByRole('button', { name: 'Delete item' })).toBeInTheDocument()
+    })
+
+    it('calls onDelete when delete button in modal is clicked', async () => {
+      const user = userEvent.setup()
+      const { onDelete } = renderRow(makeItem({ id: 'item-42' }))
 
       await user.click(screen.getByRole('button', { name: /edit burger/i }))
-      const nameInput = screen.getByLabelText(/item name/i)
-      await user.clear(nameInput)
-      await user.type(nameInput, 'Pizza{Enter}')
+      await user.click(screen.getByRole('button', { name: 'Delete item' }))
 
-      expect(onUpdate).toHaveBeenCalledWith('item-1', expect.objectContaining({ name: 'Pizza' }))
+      expect(onDelete).toHaveBeenCalledWith('item-42')
     })
   })
 })

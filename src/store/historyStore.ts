@@ -13,7 +13,6 @@ interface SerializedSession {
   people: Person[]
   lineItems: LineItem[]
   assignments: Record<string, string[]>
-  taxAmount: number
   tipConfig: TipConfig
   totals: PersonTotal[]
 }

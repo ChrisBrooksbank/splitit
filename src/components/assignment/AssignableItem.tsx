@@ -36,10 +36,10 @@ export default function AssignableItem({
     <div
       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors cursor-pointer select-none ${
         isAssigned
-          ? 'bg-gray-50'
+          ? 'bg-gray-50 dark:bg-gray-800'
           : isUnassigned
             ? 'bg-amber-50 border border-amber-200'
-            : 'active:bg-gray-50'
+            : 'active:bg-gray-50 dark:active:bg-gray-800'
       }`}
       onClick={handleRowClick}
       role="checkbox"
@@ -81,8 +81,10 @@ export default function AssignableItem({
 
       {/* Item name + quantity */}
       <div className="flex-1 min-w-0">
-        <span className="text-sm text-gray-900 truncate block">
-          {item.quantity > 1 && <span className="text-gray-500 mr-1">{item.quantity}×</span>}
+        <span className="text-sm text-gray-900 dark:text-gray-100 truncate block">
+          {item.quantity > 1 && (
+            <span className="text-gray-500 dark:text-gray-400 mr-1">{item.quantity}×</span>
+          )}
           {item.name}
         </span>
 
@@ -101,7 +103,7 @@ export default function AssignableItem({
       </div>
 
       {/* Price */}
-      <span className="flex-shrink-0 text-sm font-medium text-gray-900">
+      <span className="flex-shrink-0 text-sm font-medium text-gray-900 dark:text-gray-100">
         {formatCurrency(totalPrice)}
       </span>
 
@@ -109,7 +111,7 @@ export default function AssignableItem({
       <button
         onClick={handleShareClick}
         aria-label={`Split ${item.name} among multiple people`}
-        className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600 active:text-gray-800 transition-colors"
+        className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:text-gray-800 transition-colors"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

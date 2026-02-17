@@ -46,7 +46,7 @@ describe('SharedItemSplitter', () => {
 
   it('renders the item total price', () => {
     renderSplitter()
-    expect(screen.getByText('$12.00 total')).toBeInTheDocument()
+    expect(screen.getByText('£12.00 total')).toBeInTheDocument()
   })
 
   it('renders checkboxes for all people', () => {

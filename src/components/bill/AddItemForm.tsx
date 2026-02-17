@@ -1,98 +1,45 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
+import ItemEditorModal from './ItemEditorModal'
 
 interface AddItemFormProps {
   onAdd: (name: string, priceCents: number, quantity: number) => void
-  onCancel: () => void
 }
 
-export default function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
-  const [name, setName] = useState('')
-  const [price, setPrice] = useState('')
-  const [qty, setQty] = useState('1')
-  const nameRef = useRef<HTMLInputElement>(null)
+export default function AddItemForm({ onAdd }: AddItemFormProps) {
+  const [showModal, setShowModal] = useState(false)
 
-  useEffect(() => {
-    nameRef.current?.focus()
-  }, [])
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmedName = name.trim()
-    if (!trimmedName) return
-    const parsedPrice = Math.round(parseFloat(price) * 100)
-    if (isNaN(parsedPrice) || parsedPrice < 0) return
-    const parsedQty = Math.max(1, parseInt(qty, 10) || 1)
-    onAdd(trimmedName, parsedPrice, parsedQty)
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') onCancel()
+  function handleSave(name: string, priceCents: number, quantity: number) {
+    onAdd(name, priceCents, quantity)
+    setShowModal(false)
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      onKeyDown={handleKeyDown}
-      className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200"
-      aria-label="Add item"
-    >
-      {/* Name */}
-      <input
-        ref={nameRef}
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Item name"
-        aria-label="Item name"
-        maxLength={100}
-        className="flex-1 min-w-0 text-sm text-gray-900 bg-transparent border-b border-gray-400 focus:border-gray-900 outline-none py-0.5 placeholder:text-gray-400"
-      />
-
-      {/* Quantity */}
-      <input
-        type="number"
-        inputMode="numeric"
-        min="1"
-        value={qty}
-        onChange={(e) => setQty(e.target.value)}
-        aria-label="Quantity"
-        className="w-10 text-sm text-center text-gray-900 bg-transparent border-b border-gray-400 focus:border-gray-900 outline-none py-0.5"
-      />
-
-      {/* Price */}
-      <div className="flex items-center">
-        <span className="text-sm text-gray-500">$</span>
-        <input
-          type="number"
-          inputMode="decimal"
-          min="0"
-          step="0.01"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          placeholder="0.00"
-          aria-label="Price in dollars"
-          className="w-16 text-sm text-right text-gray-900 bg-transparent border-b border-gray-400 focus:border-gray-900 outline-none py-0.5 placeholder:text-gray-400"
-        />
-      </div>
-
-      {/* Add button */}
+    <>
       <button
-        type="submit"
+        onClick={() => setShowModal(true)}
         aria-label="Add item"
-        className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-900 font-medium text-sm"
+        className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700 transition-colors min-h-[44px]"
       >
-        Add
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className="w-4 h-4"
+          aria-hidden="true"
+        >
+          <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+        </svg>
+        Add Item
       </button>
 
-      {/* Cancel button */}
-      <button
-        type="button"
-        onClick={onCancel}
-        aria-label="Cancel"
-        className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 text-sm"
-      >
-        ✕
-      </button>
-    </form>
+      {showModal && (
+        <ItemEditorModal
+          title="Add Item"
+          saveLabel="Add Item"
+          onSave={handleSave}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
   )
 }

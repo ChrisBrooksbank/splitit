@@ -33,45 +33,45 @@ describe('LineItemList', () => {
     expect(screen.getByLabelText('Edit Soda')).toBeInTheDocument()
   })
 
-  it('shows "Add Item" button by default', () => {
+  it('shows "Add Item" button', () => {
     render(<LineItemList items={[]} onUpdate={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()} />)
     expect(screen.getByRole('button', { name: 'Add item' })).toBeInTheDocument()
   })
 
-  it('shows AddItemForm when "Add Item" button is clicked', async () => {
+  it('opens add modal when "Add Item" button is clicked', async () => {
     const user = userEvent.setup()
     render(<LineItemList items={[]} onUpdate={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()} />)
 
     await user.click(screen.getByRole('button', { name: 'Add item' }))
 
+    expect(screen.getByRole('dialog', { name: 'Add Item' })).toBeInTheDocument()
     expect(screen.getByLabelText('Item name')).toBeInTheDocument()
-    expect(screen.getByLabelText('Price in dollars')).toBeInTheDocument()
   })
 
-  it('hides AddItemForm and calls onAdd when item is submitted', async () => {
+  it('calls onAdd when item is submitted via modal', async () => {
     const onAdd = vi.fn()
     const user = userEvent.setup()
     render(<LineItemList items={[]} onUpdate={vi.fn()} onDelete={vi.fn()} onAdd={onAdd} />)
 
     await user.click(screen.getByRole('button', { name: 'Add item' }))
     await user.type(screen.getByLabelText('Item name'), 'Pizza')
-    await user.type(screen.getByLabelText('Price in dollars'), '14.99')
-    await user.click(screen.getByRole('button', { name: 'Add item' }))
+    await user.type(screen.getByLabelText('Price'), '14.99')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
     expect(onAdd).toHaveBeenCalledWith('Pizza', 1499, 1)
-    // Form should be hidden again
-    expect(screen.queryByLabelText('Item name')).not.toBeInTheDocument()
+    // Modal should be closed
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('hides AddItemForm when cancel is clicked', async () => {
+  it('closes modal when close button is clicked', async () => {
     const user = userEvent.setup()
     render(<LineItemList items={[]} onUpdate={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()} />)
 
     await user.click(screen.getByRole('button', { name: 'Add item' }))
-    expect(screen.getByLabelText('Item name')).toBeInTheDocument()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(screen.queryByLabelText('Item name')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('hides empty state when items are present', () => {

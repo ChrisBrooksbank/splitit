@@ -77,11 +77,6 @@ describe('ItemEditorPage', () => {
     expect(screen.getByText(/no items yet/i)).toBeInTheDocument()
   })
 
-  it('renders tax config input', () => {
-    renderPage()
-    expect(screen.getByLabelText(/tax amount/i)).toBeInTheDocument()
-  })
-
   it('renders bill summary card with totals region', () => {
     renderPage()
     expect(screen.getByRole('region', { name: /bill totals/i })).toBeInTheDocument()
@@ -124,8 +119,8 @@ describe('ItemEditorPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Add item' }))
     await user.type(screen.getByLabelText('Item name'), 'Pizza')
-    await user.type(screen.getByLabelText('Price in dollars'), '14.99')
-    await user.click(screen.getByRole('button', { name: 'Add item' }))
+    await user.type(screen.getByLabelText('Price'), '14.99')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
     expect(screen.getByLabelText(/edit pizza/i)).toBeInTheDocument()
   })

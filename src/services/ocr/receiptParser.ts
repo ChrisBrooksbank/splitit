@@ -109,8 +109,8 @@ function extractLineItem(line: string): LineItem | null {
 
   const rawPriceStr = priceMatch[1]
 
-  // Determine if the line had a $ prefix (affects confidence)
-  const hasCurrencySymbol = /\$/.test(line.slice(0, line.lastIndexOf(rawPriceStr)))
+  // Determine if the line had a currency symbol prefix (affects confidence)
+  const hasCurrencySymbol = /[£$]/.test(line.slice(0, line.lastIndexOf(rawPriceStr)))
 
   // Check for OCR digit fixes
   const hadOcrFix =

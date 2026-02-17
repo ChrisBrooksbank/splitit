@@ -1,26 +1,36 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import AddItemForm from '../../../src/components/bill/AddItemForm'
 
 describe('AddItemForm', () => {
-  it('renders name, quantity, and price inputs', () => {
-    render(<AddItemForm onAdd={vi.fn()} onCancel={vi.fn()} />)
+  it('renders "Add Item" button', () => {
+    render(<AddItemForm onAdd={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Add item' })).toBeInTheDocument()
+  })
+
+  it('opens modal when button is clicked', async () => {
+    const user = userEvent.setup()
+    render(<AddItemForm onAdd={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Add item' }))
+
+    expect(screen.getByRole('dialog', { name: 'Add Item' })).toBeInTheDocument()
     expect(screen.getByLabelText('Item name')).toBeInTheDocument()
-    expect(screen.getByLabelText('Quantity')).toBeInTheDocument()
-    expect(screen.getByLabelText('Price in dollars')).toBeInTheDocument()
+    expect(screen.getByLabelText('Price')).toBeInTheDocument()
   })
 
   it('calls onAdd with correct values when submitted', async () => {
     const onAdd = vi.fn()
     const user = userEvent.setup()
-    render(<AddItemForm onAdd={onAdd} onCancel={vi.fn()} />)
+    render(<AddItemForm onAdd={onAdd} />)
 
-    await user.type(screen.getByLabelText('Item name'), 'Burger')
-    await user.clear(screen.getByLabelText('Quantity'))
-    await user.type(screen.getByLabelText('Quantity'), '2')
-    await user.type(screen.getByLabelText('Price in dollars'), '12.99')
     await user.click(screen.getByRole('button', { name: 'Add item' }))
+    await user.type(screen.getByLabelText('Item name'), 'Burger')
+    await user.clear(screen.getByLabelText('Qty'))
+    await user.type(screen.getByLabelText('Qty'), '2')
+    await user.type(screen.getByLabelText('Price'), '12.99')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
     expect(onAdd).toHaveBeenCalledWith('Burger', 1299, 2)
   })
@@ -28,11 +38,12 @@ describe('AddItemForm', () => {
   it('converts price to integer cents', async () => {
     const onAdd = vi.fn()
     const user = userEvent.setup()
-    render(<AddItemForm onAdd={onAdd} onCancel={vi.fn()} />)
+    render(<AddItemForm onAdd={onAdd} />)
 
-    await user.type(screen.getByLabelText('Item name'), 'Coffee')
-    await user.type(screen.getByLabelText('Price in dollars'), '3.50')
     await user.click(screen.getByRole('button', { name: 'Add item' }))
+    await user.type(screen.getByLabelText('Item name'), 'Coffee')
+    await user.type(screen.getByLabelText('Price'), '3.50')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
     expect(onAdd).toHaveBeenCalledWith('Coffee', 350, 1)
   })
@@ -40,11 +51,12 @@ describe('AddItemForm', () => {
   it('defaults quantity to 1', async () => {
     const onAdd = vi.fn()
     const user = userEvent.setup()
-    render(<AddItemForm onAdd={onAdd} onCancel={vi.fn()} />)
+    render(<AddItemForm onAdd={onAdd} />)
 
-    await user.type(screen.getByLabelText('Item name'), 'Tea')
-    await user.type(screen.getByLabelText('Price in dollars'), '2.50')
     await user.click(screen.getByRole('button', { name: 'Add item' }))
+    await user.type(screen.getByLabelText('Item name'), 'Tea')
+    await user.type(screen.getByLabelText('Price'), '2.50')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
     expect(onAdd).toHaveBeenCalledWith('Tea', 250, 1)
   })
@@ -52,41 +64,47 @@ describe('AddItemForm', () => {
   it('does not call onAdd when name is empty', async () => {
     const onAdd = vi.fn()
     const user = userEvent.setup()
-    render(<AddItemForm onAdd={onAdd} onCancel={vi.fn()} />)
+    render(<AddItemForm onAdd={onAdd} />)
 
-    await user.type(screen.getByLabelText('Price in dollars'), '5.00')
     await user.click(screen.getByRole('button', { name: 'Add item' }))
+    await user.type(screen.getByLabelText('Price'), '5.00')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
     expect(onAdd).not.toHaveBeenCalled()
   })
 
-  it('calls onCancel when cancel button is clicked', async () => {
-    const onCancel = vi.fn()
+  it('closes modal when close button is clicked', async () => {
     const user = userEvent.setup()
-    render(<AddItemForm onAdd={vi.fn()} onCancel={onCancel} />)
+    render(<AddItemForm onAdd={vi.fn()} />)
 
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    await user.click(screen.getByRole('button', { name: 'Add item' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
 
-    expect(onCancel).toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('calls onCancel when Escape is pressed on name input', () => {
-    const onCancel = vi.fn()
-    render(<AddItemForm onAdd={vi.fn()} onCancel={onCancel} />)
+  it('closes modal after successful add', async () => {
+    const user = userEvent.setup()
+    render(<AddItemForm onAdd={vi.fn()} />)
 
-    fireEvent.keyDown(screen.getByLabelText('Item name'), { key: 'Escape' })
+    await user.click(screen.getByRole('button', { name: 'Add item' }))
+    await user.type(screen.getByLabelText('Item name'), 'Salad')
+    await user.type(screen.getByLabelText('Price'), '9.00')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
-    expect(onCancel).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('trims whitespace from name', async () => {
     const onAdd = vi.fn()
     const user = userEvent.setup()
-    render(<AddItemForm onAdd={onAdd} onCancel={vi.fn()} />)
+    render(<AddItemForm onAdd={onAdd} />)
 
-    await user.type(screen.getByLabelText('Item name'), '  Salad  ')
-    await user.type(screen.getByLabelText('Price in dollars'), '9.00')
     await user.click(screen.getByRole('button', { name: 'Add item' }))
+    await user.type(screen.getByLabelText('Item name'), '  Salad  ')
+    await user.type(screen.getByLabelText('Price'), '9.00')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
     expect(onAdd).toHaveBeenCalledWith('Salad', 900, 1)
   })

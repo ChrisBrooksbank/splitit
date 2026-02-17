@@ -8,17 +8,16 @@ import PersonTipCard from '../components/tip/PersonTipCard'
 import StepIndicator from '../components/layout/StepIndicator'
 
 /**
- * Calculate each person's pre-tip subtotal (items + proportional tax share).
+ * Calculate each person's pre-tip subtotal (items only).
  * All values in integer cents.
  */
 function usePersonSubtotals() {
   const { people } = usePeopleStore()
-  const { lineItems, taxAmount } = useBillStore()
+  const { lineItems } = useBillStore()
   const { getPersonShare } = useAssignmentStore()
 
   return useMemo(() => {
-    // Compute item subtotal per person
-    const itemSubtotals: Record<string, number> = {}
+    const preTipSubtotals: Record<string, number> = {}
     for (const person of people) {
       let subtotal = 0
       for (const item of lineItems) {
@@ -27,23 +26,11 @@ function usePersonSubtotals() {
           subtotal += Math.round(item.price * item.quantity * share)
         }
       }
-      itemSubtotals[person.id] = subtotal
-    }
-
-    // Total bill subtotal (sum of all item subtotals)
-    const billSubtotal = Object.values(itemSubtotals).reduce((a, b) => a + b, 0)
-
-    // Proportional tax share per person + pre-tip subtotal (items + tax)
-    const preTipSubtotals: Record<string, number> = {}
-    for (const person of people) {
-      const personItemSubtotal = itemSubtotals[person.id] ?? 0
-      const taxShare =
-        billSubtotal > 0 ? Math.round((taxAmount * personItemSubtotal) / billSubtotal) : 0
-      preTipSubtotals[person.id] = personItemSubtotal + taxShare
+      preTipSubtotals[person.id] = subtotal
     }
 
     return preTipSubtotals
-  }, [people, lineItems, taxAmount, getPersonShare])
+  }, [people, lineItems, getPersonShare])
 }
 
 export default function TipSelectionPage() {
@@ -74,12 +61,14 @@ export default function TipSelectionPage() {
 
   if (people.length === 0) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-gray-500 text-base">No people found. Please set up people first.</p>
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center px-6 text-center">
+        <p className="text-gray-500 dark:text-gray-400 text-base">
+          No people found. Please set up people first.
+        </p>
         <button
           onClick={() => navigate('/people')}
           aria-label="Go to people setup"
-          className="mt-4 px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium min-h-[44px]"
+          className="mt-4 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium min-h-[44px]"
         >
           Set up people
         </button>
@@ -91,26 +80,32 @@ export default function TipSelectionPage() {
   const firstPersonTip = people.length > 0 ? personTips[people[0].id] : null
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800 flex flex-col">
       {/* Progress */}
       <StepIndicator currentRoute="/tips" />
 
       {/* Header */}
-      <div className="bg-white px-4 pt-2 pb-4 border-b border-gray-100">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Tip</h1>
-        <p className="mt-0.5 text-sm text-gray-500">Each person picks their own tip.</p>
+      <div className="bg-white dark:bg-gray-900 px-4 pt-2 pb-4 border-b border-gray-100 dark:border-gray-700">
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+          Tip
+        </h1>
+        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+          Each person picks their own tip.
+        </p>
 
         {/* Mode toggle */}
         <div
           role="group"
           aria-label="Tip mode"
-          className="mt-3 flex rounded-xl overflow-hidden border border-gray-200"
+          className="mt-3 flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600"
         >
           <button
             onClick={() => setTipMode('pass-around')}
             className={[
               'flex-1 py-2 text-sm font-medium transition-colors min-h-[44px]',
-              tipMode === 'pass-around' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600',
+              tipMode === 'pass-around'
+                ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400',
             ].join(' ')}
             aria-pressed={tipMode === 'pass-around'}
             aria-label="Each person picks their own tip (pass around)"
@@ -121,7 +116,9 @@ export default function TipSelectionPage() {
             onClick={() => setTipMode('everyone')}
             className={[
               'flex-1 py-2 text-sm font-medium transition-colors min-h-[44px]',
-              tipMode === 'everyone' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600',
+              tipMode === 'everyone'
+                ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400',
             ].join(' ')}
             aria-pressed={tipMode === 'everyone'}
             aria-label="Set one tip percentage for everyone"
@@ -135,8 +132,10 @@ export default function TipSelectionPage() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {tipMode === 'everyone' && firstPersonTip ? (
           /* One tip for all */
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <p className="text-sm font-medium text-gray-700 mb-3">Choose one tip % for everyone</p>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Choose one tip % for everyone
+            </p>
             <div className="flex gap-2">
               {[15, 18, 20, 25].map((pct) => (
                 <button
@@ -145,8 +144,8 @@ export default function TipSelectionPage() {
                   className={[
                     'flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors',
                     firstPersonTip.mode === 'percentage' && firstPersonTip.percentage === pct
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-gray-100 text-gray-700 active:bg-gray-200',
+                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600',
                   ].join(' ')}
                   aria-label={`${pct}% for everyone`}
                   aria-pressed={
@@ -157,7 +156,7 @@ export default function TipSelectionPage() {
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-xs text-gray-500 text-center">
+            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 text-center">
               This tip % will be applied to each person's subtotal.
             </p>
           </div>
@@ -183,10 +182,10 @@ export default function TipSelectionPage() {
       </div>
 
       {/* Footer */}
-      <div className="bg-white border-t border-gray-100 px-4 pb-8 pt-3">
+      <div className="bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 px-4 pb-8 pt-3">
         <button
           onClick={handleCalculate}
-          className="w-full py-4 px-6 bg-gray-900 text-white text-base font-medium rounded-2xl active:scale-95 transition-transform"
+          className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
           aria-label="Calculate final split and go to summary"
         >
           Calculate Final Split →

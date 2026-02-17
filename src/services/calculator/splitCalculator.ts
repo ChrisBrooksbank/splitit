@@ -4,13 +4,11 @@
  * Algorithm:
  *   For each person:
  *     subtotal = sum of (item.price * qty * personShareFraction) for their assigned items
- *     proportion = subtotal / billSubtotal
- *     taxShare = round(tax * proportion)
  *     tipAmount = based on person's individual tip choice (percentage of subtotal or fixed)
- *     total = subtotal + taxShare + tipAmount
+ *     total = subtotal + tipAmount
  *
  *   Rounding adjustment: the person with the largest subtotal absorbs any cent difference
- *   so that sum(taxShares) === taxAmount and grand totals balance exactly.
+ *   so that grand totals balance exactly.
  */
 
 import type { LineItem, PersonTotal } from '../../types'
@@ -23,7 +21,6 @@ export interface SplitInput {
   assignments: Record<string, string[]>
   /** itemId -> personId -> portion weight (custom split); absent = equal split */
   portions: Record<string, Record<string, number>>
-  taxAmount: number // cents
   personTips: Record<string, PersonTip>
 }
 
@@ -33,7 +30,7 @@ export interface SplitResult {
   billSubtotal: number
   /** Sum of all person tips */
   totalTip: number
-  /** billSubtotal + taxAmount + totalTip */
+  /** billSubtotal + totalTip */
   grandTotal: number
 }
 
@@ -65,7 +62,7 @@ function calcTipAmount(subtotalCents: number, tip: PersonTip | undefined): numbe
 }
 
 export function calculateSplit(input: SplitInput): SplitResult {
-  const { people, lineItems, assignments, portions, taxAmount, personTips } = input
+  const { people, lineItems, assignments, portions, personTips } = input
 
   // Step 1: Item subtotal per person (integer cents)
   const itemSubtotals: Record<string, number> = {}
@@ -83,41 +80,15 @@ export function calculateSplit(input: SplitInput): SplitResult {
   // Step 2: Bill subtotal = sum of all person item subtotals
   const billSubtotal = people.reduce((sum, p) => sum + (itemSubtotals[p.id] ?? 0), 0)
 
-  // Step 3: Proportional tax share — allocate to everyone, then give remainder to largest share
-  const taxShares: Record<string, number> = {}
-
-  if (billSubtotal > 0 && people.length > 0) {
-    // Sort descending by subtotal to identify the largest-share person
-    const sortedBySubtotal = [...people].sort(
-      (a, b) => (itemSubtotals[b.id] ?? 0) - (itemSubtotals[a.id] ?? 0)
-    )
-    const largestPersonId = sortedBySubtotal[0].id
-
-    let taxAllocated = 0
-    for (const person of people) {
-      if (person.id === largestPersonId) continue // assign remainder after loop
-      const share = Math.round((taxAmount * (itemSubtotals[person.id] ?? 0)) / billSubtotal)
-      taxShares[person.id] = share
-      taxAllocated += share
-    }
-    // Largest-share person absorbs rounding remainder
-    taxShares[largestPersonId] = taxAmount - taxAllocated
-  } else {
-    for (const person of people) {
-      taxShares[person.id] = 0
-    }
-  }
-
-  // Step 4: Tip per person
+  // Step 3: Tip per person
   const tipAmounts: Record<string, number> = {}
   for (const person of people) {
     tipAmounts[person.id] = calcTipAmount(itemSubtotals[person.id] ?? 0, personTips[person.id])
   }
 
-  // Step 5: Assemble results
+  // Step 4: Assemble results
   const personTotals: PersonTotal[] = people.map((person) => {
     const subtotal = itemSubtotals[person.id] ?? 0
-    const taxShare = taxShares[person.id] ?? 0
     const tipAmount = tipAmounts[person.id] ?? 0
     const tip = personTips[person.id]
     const tipPercentage =
@@ -130,15 +101,14 @@ export function calculateSplit(input: SplitInput): SplitResult {
     return {
       personId: person.id,
       subtotal,
-      taxShare,
       tipAmount,
-      total: subtotal + taxShare + tipAmount,
+      total: subtotal + tipAmount,
       tipPercentage,
     }
   })
 
   const totalTip = personTotals.reduce((sum, p) => sum + p.tipAmount, 0)
-  const grandTotal = billSubtotal + taxAmount + totalTip
+  const grandTotal = billSubtotal + totalTip
 
   return { personTotals, billSubtotal, totalTip, grandTotal }
 }

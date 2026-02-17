@@ -11,10 +11,6 @@ describe('billStore', () => {
     it('starts with empty line items', () => {
       expect(useBillStore.getState().lineItems).toEqual([])
     })
-
-    it('starts with zero tax amount', () => {
-      expect(useBillStore.getState().taxAmount).toBe(0)
-    })
   })
 
   describe('setLineItems', () => {
@@ -259,25 +255,6 @@ describe('billStore', () => {
     })
   })
 
-  describe('setTaxAmount', () => {
-    it('sets tax amount in cents', () => {
-      useBillStore.getState().setTaxAmount(245)
-      expect(useBillStore.getState().taxAmount).toBe(245)
-    })
-
-    it('can update tax to a new value', () => {
-      useBillStore.getState().setTaxAmount(100)
-      useBillStore.getState().setTaxAmount(350)
-      expect(useBillStore.getState().taxAmount).toBe(350)
-    })
-
-    it('can set tax to zero', () => {
-      useBillStore.getState().setTaxAmount(500)
-      useBillStore.getState().setTaxAmount(0)
-      expect(useBillStore.getState().taxAmount).toBe(0)
-    })
-  })
-
   describe('reset', () => {
     it('clears all line items', () => {
       useBillStore.getState().addLineItem({
@@ -289,12 +266,6 @@ describe('billStore', () => {
       })
       useBillStore.getState().reset()
       expect(useBillStore.getState().lineItems).toEqual([])
-    })
-
-    it('resets tax amount to zero', () => {
-      useBillStore.getState().setTaxAmount(999)
-      useBillStore.getState().reset()
-      expect(useBillStore.getState().taxAmount).toBe(0)
     })
   })
 })

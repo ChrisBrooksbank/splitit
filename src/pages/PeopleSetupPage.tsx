@@ -72,14 +72,16 @@ export default function PeopleSetupPage() {
   const canContinue = people.length >= 2
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
       {/* Progress */}
       <StepIndicator currentRoute="/people" />
 
       {/* Header */}
       <div className="px-4 pt-2 pb-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Who's at the table?</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+          Who's at the table?
+        </h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Add everyone splitting this bill. Minimum 2 people.
         </p>
       </div>
@@ -97,13 +99,13 @@ export default function PeopleSetupPage() {
             placeholder="Name"
             aria-label="Person's name"
             maxLength={40}
-            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent"
           />
           <button
             onClick={handleAdd}
             disabled={!inputValue.trim()}
             aria-label="Add person"
-            className="px-5 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed min-w-[64px]"
+            className="px-5 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed min-w-[64px]"
           >
             Add
           </button>
@@ -115,7 +117,7 @@ export default function PeopleSetupPage() {
             {people.map((person) => (
               <li
                 key={person.id}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800"
               >
                 {/* Color swatch */}
                 <span
@@ -135,13 +137,13 @@ export default function PeopleSetupPage() {
                     onBlur={() => handleSaveEdit(person.id)}
                     aria-label={`Edit name for ${person.name}`}
                     maxLength={40}
-                    className="flex-1 px-2 py-1 rounded-lg border border-gray-300 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className="flex-1 px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100"
                   />
                 ) : (
                   <button
                     onClick={() => handleStartEdit(person.id, person.name)}
                     aria-label={`Edit ${person.name}`}
-                    className="flex-1 text-left text-base text-gray-900 font-medium focus:outline-none"
+                    className="flex-1 text-left text-base text-gray-900 dark:text-gray-100 font-medium focus:outline-none"
                   >
                     {person.name}
                   </button>
@@ -172,24 +174,26 @@ export default function PeopleSetupPage() {
 
         {/* Empty state hint */}
         {people.length === 0 && (
-          <p className="text-center text-sm text-gray-400 py-8">
+          <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-8">
             Add at least 2 people to split the bill.
           </p>
         )}
 
         {/* "Need 2" reminder */}
         {people.length === 1 && (
-          <p className="text-center text-sm text-gray-400">Add one more person to continue.</p>
+          <p className="text-center text-sm text-gray-400 dark:text-gray-500">
+            Add one more person to continue.
+          </p>
         )}
       </div>
 
       {/* Sticky continue button */}
-      <div className="px-4 pb-8 pt-3 bg-white border-t border-gray-100">
+      <div className="px-4 pb-8 pt-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
         <button
           onClick={handleContinue}
           disabled={!canContinue}
           aria-label="Continue to assignment"
-          className="w-full py-4 px-6 bg-gray-900 text-white text-base font-medium rounded-2xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Continue to Assignment
         </button>

@@ -96,12 +96,14 @@ export default function AssignmentPage() {
 
   if (people.length < 2) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-gray-500 text-base">Please add at least 2 people first.</p>
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center px-6 text-center">
+        <p className="text-gray-500 dark:text-gray-400 text-base">
+          Please add at least 2 people first.
+        </p>
         <button
           onClick={() => navigate('/people')}
           aria-label="Go to people setup"
-          className="mt-4 px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium min-h-[44px]"
+          className="mt-4 px-6 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-xl text-sm font-medium min-h-[44px]"
         >
           Set up people
         </button>
@@ -126,17 +128,21 @@ export default function AssignmentPage() {
     const remainingPeople = people.slice(personIndex)
 
     return (
-      <div className="min-h-screen bg-white flex flex-col">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
         {/* Progress */}
         <StepIndicator currentRoute="/assign" />
 
         {/* Header */}
         <div className="px-4 pt-2 pb-6">
-          <p className="text-sm text-gray-500 mb-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
             {personIndex === 0 ? 'First up' : 'Your turn'}
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Who are you?</h1>
-          <p className="mt-1 text-sm text-gray-500">Tap your name to start claiming your items.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+            Who are you?
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Tap your name to start claiming your items.
+          </p>
         </div>
 
         {/* Person buttons */}
@@ -178,38 +184,40 @@ export default function AssignmentPage() {
   const splitterItem = splitterItemId ? lineItems.find((i) => i.id === splitterItemId) : null
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
       {/* Progress */}
       <StepIndicator currentRoute="/assign" />
 
       {/* Header */}
-      <div className="px-4 pt-2 pb-4 border-b border-gray-100">
+      <div className="px-4 pt-2 pb-4 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-3 mb-1">
           <span
             className="w-4 h-4 rounded-full flex-shrink-0"
             style={{ backgroundColor: currentPerson.color }}
             aria-hidden="true"
           />
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-gray-500 dark:text-gray-400">
             {personIndex + 1} of {people.length}
           </span>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           {currentPerson.name}'s items
         </h1>
-        <p className="mt-0.5 text-sm text-gray-500">Tap to claim what you ordered.</p>
+        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+          Tap to claim what you ordered.
+        </p>
       </div>
 
       {/* Unassigned warning */}
       {showUnassignedWarning && unassignedItems.length > 0 && (
         <div
           role="alert"
-          className="mx-4 mt-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200"
+          className="mx-4 mt-4 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-700"
         >
-          <p className="text-sm font-semibold text-amber-800">
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
             {unassignedItems.length} item{unassignedItems.length > 1 ? 's' : ''} still unassigned
           </p>
-          <p className="text-xs text-amber-700 mt-0.5">
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
             Assign all items before continuing to tips.
           </p>
         </div>
@@ -218,7 +226,9 @@ export default function AssignmentPage() {
       {/* Item list */}
       <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-1">
         {lineItems.length === 0 && (
-          <p className="text-center text-sm text-gray-400 py-12">No items on the bill.</p>
+          <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-12">
+            No items on the bill.
+          </p>
         )}
         {lineItems.map((item) => {
           const assignees = getAssignees(item)
@@ -241,10 +251,10 @@ export default function AssignmentPage() {
       </div>
 
       {/* Footer — I'm Done */}
-      <div className="px-4 pb-8 pt-3 bg-white border-t border-gray-100">
+      <div className="px-4 pb-8 pt-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
         <button
           onClick={handleDone}
-          className="w-full py-4 px-6 bg-gray-900 text-white text-base font-medium rounded-2xl active:scale-95 transition-transform"
+          className="w-full py-4 px-6 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
           aria-label={
             personIndex >= people.length - 1
               ? 'Finish and calculate split'

@@ -7,6 +7,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import ItemEditorPage from '../src/pages/ItemEditorPage'
 import AssignmentPage from '../src/pages/AssignmentPage'
@@ -123,8 +124,10 @@ describe('Very long name truncation', () => {
 // AddItemForm maxLength
 // ---------------------------------------------------------------------------
 describe('AddItemForm name length limit', () => {
-  it('name input has maxLength=100', () => {
-    render(<AddItemForm onAdd={vi.fn()} onCancel={vi.fn()} />)
+  it('name input has maxLength=100', async () => {
+    const user = userEvent.setup()
+    render(<AddItemForm onAdd={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Add item' }))
     const nameInput = screen.getByLabelText('Item name')
     expect(nameInput).toHaveAttribute('maxLength', '100')
   })

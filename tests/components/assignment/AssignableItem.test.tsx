@@ -52,12 +52,12 @@ describe('AssignableItem', () => {
 
   it('renders item price', () => {
     renderItem(makeItem({ price: 1299, quantity: 1 }))
-    expect(screen.getByText('$12.99')).toBeInTheDocument()
+    expect(screen.getByText('£12.99')).toBeInTheDocument()
   })
 
   it('renders total price for multi-quantity items', () => {
     renderItem(makeItem({ price: 500, quantity: 2 }))
-    expect(screen.getByText('$10.00')).toBeInTheDocument()
+    expect(screen.getByText('£10.00')).toBeInTheDocument()
   })
 
   it('shows quantity prefix for qty > 1', () => {

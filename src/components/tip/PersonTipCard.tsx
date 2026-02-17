@@ -25,7 +25,7 @@ export default function PersonTipCard({
   const totalCents = subtotalCents + tipAmountCents
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
       {/* Person header */}
       <div
         className="px-4 py-3 flex items-center gap-3"
@@ -37,21 +37,29 @@ export default function PersonTipCard({
           aria-hidden="true"
         />
         <div className="flex-1 min-w-0">
-          <p className="text-base font-semibold text-gray-900 truncate">{person.name}</p>
-          <p className="text-xs text-gray-500">
+          <p className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {person.name}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Subtotal:{' '}
-            <span className="font-medium text-gray-700">{formatCurrency(subtotalCents)}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              {formatCurrency(subtotalCents)}
+            </span>
           </p>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="text-xs text-gray-500">Total</p>
-          <p className="text-base font-bold text-gray-900">{formatCurrency(totalCents)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
+          <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+            {formatCurrency(totalCents)}
+          </p>
         </div>
       </div>
 
       {/* Tip selector */}
       <div className="px-4 pb-4 pt-2">
-        <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Choose tip</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium uppercase tracking-wide">
+          Choose tip
+        </p>
         <TipSelector
           tip={tip}
           subtotalCents={subtotalCents}

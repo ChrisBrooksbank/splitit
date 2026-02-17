@@ -25,9 +25,8 @@ export type AssignmentMap = Map<string, string[]>
 export interface PersonTotal {
   personId: string
   subtotal: number // cents — sum of assigned item shares
-  taxShare: number // cents — proportional tax
   tipAmount: number // cents — person's chosen tip
-  total: number // cents — subtotal + taxShare + tipAmount
+  total: number // cents — subtotal + tipAmount
   tipPercentage: number // e.g. 20
 }
 
@@ -38,7 +37,6 @@ export interface BillSession {
   people: Person[]
   lineItems: LineItem[]
   assignments: Map<string, string[]>
-  taxAmount: number // cents
   tipConfig: TipConfig
   totals: PersonTotal[] // calculated summary
 }

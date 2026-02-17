@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { useThemeEffect } from './hooks/useThemeEffect'
+import ThemeToggle from './components/layout/ThemeToggle'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const ProcessingPage = lazy(() => import('./pages/ProcessingPage'))
@@ -12,10 +14,10 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage'))
 
 function PageLoader() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
+    <div className="flex min-h-screen items-center justify-center bg-white dark:bg-gray-900">
       <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-gray-800" />
-        <p className="text-sm text-gray-500">Loading…</p>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 dark:border-gray-700 border-t-gray-800 dark:border-t-gray-200" />
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       </div>
     </div>
   )
@@ -40,8 +42,13 @@ function AnimatedRoutes() {
 }
 
 export default function App() {
+  useThemeEffect()
+
   return (
     <BrowserRouter>
+      <div className="fixed top-3 right-3 z-40">
+        <ThemeToggle />
+      </div>
       <Suspense fallback={<PageLoader />}>
         <AnimatedRoutes />
       </Suspense>

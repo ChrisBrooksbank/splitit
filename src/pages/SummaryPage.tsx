@@ -22,28 +22,32 @@ interface PersonSummaryCardProps {
 }
 
 function PersonSummaryCard({ person, personTotal, items }: PersonSummaryCardProps) {
-  const { subtotal, taxShare, tipAmount, tipPercentage, total } = personTotal
+  const { subtotal, tipAmount, tipPercentage, total } = personTotal
 
   return (
     <div
-      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden"
       aria-label={`${person.name}'s summary`}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-gray-50">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-gray-50 dark:border-gray-700">
         <span
           className="w-3 h-3 rounded-full flex-shrink-0"
           style={{ backgroundColor: person.color }}
           aria-hidden="true"
         />
-        <span className="font-semibold text-gray-900 text-base">{person.name}</span>
-        <span className="ml-auto font-bold text-gray-900 text-lg">{formatCurrency(total)}</span>
+        <span className="font-semibold text-gray-900 dark:text-gray-100 text-base">
+          {person.name}
+        </span>
+        <span className="ml-auto font-bold text-gray-900 dark:text-gray-100 text-lg">
+          {formatCurrency(total)}
+        </span>
       </div>
 
       {/* Item lines */}
       <div className="px-4 py-3 space-y-1.5">
         {items.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">No items</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 italic">No items</p>
         ) : (
           items.map(({ item, shareCount }) => {
             const itemTotal = Math.round((item.price * item.quantity) / shareCount)
@@ -53,8 +57,10 @@ function PersonSummaryCard({ person, personTotal, items }: PersonSummaryCardProp
                 : item.name
             return (
               <div key={item.id} className="flex justify-between items-baseline">
-                <span className="text-sm text-gray-700 flex-1 mr-2 truncate">{label}</span>
-                <span className="text-sm text-gray-700 tabular-nums flex-shrink-0">
+                <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 mr-2 truncate">
+                  {label}
+                </span>
+                <span className="text-sm text-gray-700 dark:text-gray-300 tabular-nums flex-shrink-0">
                   {formatCurrency(itemTotal)}
                 </span>
               </div>
@@ -64,16 +70,12 @@ function PersonSummaryCard({ person, personTotal, items }: PersonSummaryCardProp
       </div>
 
       {/* Subtotals */}
-      <div className="px-4 pb-4 pt-1 border-t border-gray-50 space-y-1">
-        <div className="flex justify-between text-sm text-gray-500">
+      <div className="px-4 pb-4 pt-1 border-t border-gray-50 dark:border-gray-700 space-y-1">
+        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
           <span>Subtotal</span>
           <span className="tabular-nums">{formatCurrency(subtotal)}</span>
         </div>
-        <div className="flex justify-between text-sm text-gray-500">
-          <span>Tax</span>
-          <span className="tabular-nums">{formatCurrency(taxShare)}</span>
-        </div>
-        <div className="flex justify-between text-sm text-gray-500">
+        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
           <span>Tip ({tipPercentage}%)</span>
           <span className="tabular-nums">{formatCurrency(tipAmount)}</span>
         </div>
@@ -93,7 +95,7 @@ function buildCopyText(
   grandTotal: number,
   restaurantName?: string
 ): string {
-  const dateStr = new Date().toLocaleDateString('en-US', {
+  const dateStr = new Date().toLocaleDateString('en-GB', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -112,7 +114,6 @@ function buildCopyText(
       const suffix = shareCount > 1 ? ` (÷${shareCount})` : ''
       lines.push(`  - ${item.name}${suffix} (${formatCurrency(itemTotal)})`)
     }
-    lines.push(`  - Tax: ${formatCurrency(pt.taxShare)}`)
     lines.push(`  - Tip (${pt.tipPercentage}%): ${formatCurrency(pt.tipAmount)}`)
     lines.push('')
   }
@@ -128,7 +129,7 @@ function buildCopyText(
 export default function SummaryPage() {
   const navigate = useNavigate()
   const { people } = usePeopleStore()
-  const { lineItems, taxAmount } = useBillStore()
+  const { lineItems } = useBillStore()
   const { assignments, portions } = useAssignmentStore()
   const { personTips } = useTipStore()
   const { saveSession } = useHistoryStore()
@@ -143,10 +144,9 @@ export default function SummaryPage() {
         lineItems,
         assignments,
         portions,
-        taxAmount,
         personTips,
       }),
-    [people, lineItems, assignments, portions, taxAmount, personTips]
+    [people, lineItems, assignments, portions, personTips]
   )
 
   // Build per-person item lists
@@ -177,7 +177,6 @@ export default function SummaryPage() {
       people,
       lineItems,
       assignments: new Map(Object.entries(assignments)),
-      taxAmount,
       tipConfig: {
         mode: 'per-person' as const,
         percentage: 20,
@@ -186,7 +185,7 @@ export default function SummaryPage() {
       totals: splitResult.personTotals,
     }
     saveSession(session)
-  }, [people, lineItems, assignments, taxAmount, splitResult.personTotals, saveSession])
+  }, [people, lineItems, assignments, splitResult.personTotals, saveSession])
 
   function handleCopySummary() {
     const text = buildCopyText(
@@ -211,12 +210,12 @@ export default function SummaryPage() {
 
   if (people.length === 0) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-gray-500 text-base">No bill data found.</p>
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center px-6 text-center">
+        <p className="text-gray-500 dark:text-gray-400 text-base">No bill data found.</p>
         <button
           onClick={() => navigate('/')}
           aria-label="Start a new bill"
-          className="mt-4 px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium min-h-[44px]"
+          className="mt-4 px-6 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-xl text-sm font-medium min-h-[44px]"
         >
           Start a new bill
         </button>
@@ -227,14 +226,18 @@ export default function SummaryPage() {
   const { personTotals, billSubtotal, grandTotal, totalTip } = splitResult
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800 flex flex-col">
       {/* Progress */}
       <StepIndicator currentRoute="/summary" />
 
       {/* Header */}
-      <div className="bg-white px-4 pt-2 pb-4 border-b border-gray-100">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Summary</h1>
-        <p className="mt-0.5 text-sm text-gray-500">Here's what everyone owes.</p>
+      <div className="bg-white dark:bg-gray-900 px-4 pt-2 pb-4 border-b border-gray-100 dark:border-gray-700">
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+          Summary
+        </h1>
+        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+          Here's what everyone owes.
+        </p>
       </div>
 
       {/* Person cards */}
@@ -254,22 +257,18 @@ export default function SummaryPage() {
 
         {/* Grand total verification row */}
         <div
-          className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-4"
+          className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-4"
           aria-label="Grand total"
         >
-          <div className="flex justify-between text-sm text-gray-500 mb-1">
+          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
             <span>Bill subtotal</span>
             <span className="tabular-nums">{formatCurrency(billSubtotal)}</span>
           </div>
-          <div className="flex justify-between text-sm text-gray-500 mb-1">
-            <span>Tax</span>
-            <span className="tabular-nums">{formatCurrency(taxAmount)}</span>
-          </div>
-          <div className="flex justify-between text-sm text-gray-500 mb-3">
+          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
             <span>Total tips</span>
             <span className="tabular-nums">{formatCurrency(totalTip)}</span>
           </div>
-          <div className="flex justify-between font-semibold text-gray-900 text-lg border-t border-gray-100 pt-3">
+          <div className="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-lg border-t border-gray-100 dark:border-gray-700 pt-3">
             <span>Grand Total</span>
             <span className="tabular-nums">{formatCurrency(grandTotal)}</span>
           </div>
@@ -277,17 +276,17 @@ export default function SummaryPage() {
       </div>
 
       {/* Footer actions */}
-      <div className="bg-white border-t border-gray-100 px-4 pb-8 pt-3 space-y-2">
+      <div className="bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 px-4 pb-8 pt-3 space-y-2">
         <button
           onClick={handleCopySummary}
-          className="w-full py-4 px-6 bg-gray-900 text-white text-base font-medium rounded-2xl active:scale-95 transition-transform"
+          className="w-full py-4 px-6 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
           aria-label="Copy summary to clipboard"
         >
           Copy Summary
         </button>
         <button
           onClick={handleStartNewBill}
-          className="w-full py-3 px-6 bg-gray-100 text-gray-700 text-base font-medium rounded-2xl active:scale-95 transition-transform"
+          className="w-full py-3 px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-base font-medium rounded-2xl active:scale-95 transition-transform"
           aria-label="Clear session and start a new bill"
         >
           Start New Bill

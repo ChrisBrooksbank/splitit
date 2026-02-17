@@ -126,20 +126,25 @@ export default function SharedItemSplitter({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="relative w-full bg-white rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col focus:outline-none"
+        className="relative w-full bg-white dark:bg-gray-900 rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col focus:outline-none"
         onKeyDown={handleKeyDown}
       >
         {/* Handle bar */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden="true" />
+          <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" aria-hidden="true" />
         </div>
 
         {/* Header */}
-        <div className="px-6 py-3 border-b border-gray-100">
-          <h2 id={DIALOG_TITLE_ID} className="text-base font-semibold text-gray-900 truncate">
+        <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-700">
+          <h2
+            id={DIALOG_TITLE_ID}
+            className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate"
+          >
             {item.name}
           </h2>
-          <p className="text-sm text-gray-500">{formatCurrency(totalPrice)} total</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {formatCurrency(totalPrice)} total
+          </p>
         </div>
 
         {/* Content */}
@@ -190,7 +195,7 @@ export default function SharedItemSplitter({
                       style={{ backgroundColor: person.color }}
                       aria-hidden="true"
                     />
-                    <span className="text-sm font-medium text-gray-900 truncate">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {person.name}
                     </span>
                   </div>
@@ -198,7 +203,10 @@ export default function SharedItemSplitter({
                   {/* Custom portion selector */}
                   {useCustom && isChecked && (
                     <div className="mt-1.5 flex items-center gap-2">
-                      <label className="text-xs text-gray-500" htmlFor={`portion-${person.id}`}>
+                      <label
+                        className="text-xs text-gray-500 dark:text-gray-400"
+                        htmlFor={`portion-${person.id}`}
+                      >
                         Portions:
                       </label>
                       <input
@@ -212,17 +220,21 @@ export default function SharedItemSplitter({
                           const val = Math.max(1, parseInt(e.target.value, 10) || 1)
                           setPortions((prev) => ({ ...prev, [person.id]: val }))
                         }}
-                        className="w-14 text-sm text-center border border-gray-300 rounded-lg py-1 focus:border-gray-500 focus:outline-none"
+                        className="w-14 text-sm text-center border border-gray-300 dark:border-gray-600 rounded-lg py-1 focus:border-gray-500 dark:focus:border-gray-400 focus:outline-none"
                         aria-label={`${person.name} portion count`}
                       />
-                      <span className="text-xs text-gray-500">{getCustomShare(person.id)}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {getCustomShare(person.id)}
+                      </span>
                     </div>
                   )}
                 </div>
 
                 {/* Share amount (even split mode) */}
                 {!useCustom && isChecked && (
-                  <span className="flex-shrink-0 text-sm text-gray-500">{getEvenShare()}</span>
+                  <span className="flex-shrink-0 text-sm text-gray-500 dark:text-gray-400">
+                    {getEvenShare()}
+                  </span>
                 )}
               </div>
             )
@@ -230,14 +242,14 @@ export default function SharedItemSplitter({
         </div>
 
         {/* Custom split toggle */}
-        <div className="px-6 py-3 border-t border-gray-100">
+        <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-700">
           <button
             onClick={() => setUseCustom((v) => !v)}
-            className="flex items-center gap-2 text-sm text-gray-600 min-h-[44px]"
+            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-h-[44px]"
             aria-pressed={useCustom}
           >
             <div
-              className={`relative w-10 h-6 rounded-full transition-colors ${useCustom ? 'bg-gray-900' : 'bg-gray-300'}`}
+              className={`relative w-10 h-6 rounded-full transition-colors ${useCustom ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-gray-600'}`}
             >
               <div
                 className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${useCustom ? 'translate-x-5' : 'translate-x-1'}`}
@@ -252,14 +264,14 @@ export default function SharedItemSplitter({
           <button
             onClick={onClose}
             aria-label="Cancel and close"
-            className="flex-1 min-h-[48px] rounded-xl border border-gray-200 text-sm font-medium text-gray-700 active:bg-gray-50 transition-colors"
+            className="flex-1 min-h-[48px] rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 active:bg-gray-50 dark:active:bg-gray-800 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={selected.size === 0}
-            className="flex-1 min-h-[48px] rounded-xl bg-gray-900 text-sm font-medium text-white disabled:opacity-40 active:bg-gray-700 transition-colors"
+            className="flex-1 min-h-[48px] rounded-xl bg-gray-900 dark:bg-white text-sm font-medium text-white dark:text-gray-900 disabled:opacity-40 active:bg-gray-700 dark:active:bg-gray-600 transition-colors"
           >
             {selected.size === 0 ? 'Select people' : `Split ${selected.size} ways`}
           </button>
