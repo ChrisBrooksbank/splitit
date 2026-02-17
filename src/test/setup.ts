@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom'
 
-// Mock matchMedia for jsdom (used by useThemeEffect)
+// Mock matchMedia for jsdom (used by useAppearanceEffect)
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({

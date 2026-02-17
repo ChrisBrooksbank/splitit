@@ -1,8 +1,13 @@
 import { useEffect } from 'react'
-import { useThemeStore } from '../store/themeStore'
+import { useAppearanceStore } from '../store/appearanceStore'
 
-export function useThemeEffect() {
-  const preference = useThemeStore((s) => s.preference)
+export function useAppearanceEffect() {
+  const preference = useAppearanceStore((s) => s.preference)
+  const fontSize = useAppearanceStore((s) => s.fontSize)
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSize}px`
+  }, [fontSize])
 
   useEffect(() => {
     const root = document.documentElement

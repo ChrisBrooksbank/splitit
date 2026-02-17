@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { useThemeEffect } from './hooks/useThemeEffect'
-import ThemeToggle from './components/layout/ThemeToggle'
+import { useAppearanceEffect } from './hooks/useAppearanceEffect'
+import AppearanceToggle from './components/layout/AppearanceToggle'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const ProcessingPage = lazy(() => import('./pages/ProcessingPage'))
@@ -42,12 +42,12 @@ function AnimatedRoutes() {
 }
 
 export default function App() {
-  useThemeEffect()
+  useAppearanceEffect()
 
   return (
     <BrowserRouter>
       <div className="fixed top-3 right-3 z-40">
-        <ThemeToggle />
+        <AppearanceToggle />
       </div>
       <Suspense fallback={<PageLoader />}>
         <AnimatedRoutes />
