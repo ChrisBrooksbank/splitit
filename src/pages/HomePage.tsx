@@ -207,6 +207,14 @@ export default function HomePage() {
           >
             Enter Manually
           </button>
+
+          {/* AI assistant */}
+          <button
+            onClick={() => navigate('/ai-assist')}
+            className="w-full py-4 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-2xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
+          >
+            Use AI Assistant
+          </button>
         </div>
 
         {/* History link */}

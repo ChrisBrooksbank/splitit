@@ -13,6 +13,7 @@ const AssignmentPage = lazy(() => import('./pages/AssignmentPage'))
 const TipSelectionPage = lazy(() => import('./pages/TipSelectionPage'))
 const SummaryPage = lazy(() => import('./pages/SummaryPage'))
 const HistoryPage = lazy(() => import('./pages/HistoryPage'))
+const AiAssistPage = lazy(() => import('./pages/AiAssistPage'))
 
 function PageLoader() {
   return (
@@ -38,6 +39,7 @@ function AnimatedRoutes() {
         <Route path="/tips" element={<TipSelectionPage />} />
         <Route path="/summary" element={<SummaryPage />} />
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/ai-assist" element={<AiAssistPage />} />
       </Routes>
     </div>
   )
