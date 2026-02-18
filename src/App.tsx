@@ -1,7 +1,9 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useAppearanceEffect } from './hooks/useAppearanceEffect'
+import { useSWUpdate } from './hooks/useSWUpdate'
 import AppearanceToggle from './components/layout/AppearanceToggle'
+import UpdateToast from './components/layout/UpdateToast'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const ProcessingPage = lazy(() => import('./pages/ProcessingPage'))
@@ -43,6 +45,7 @@ function AnimatedRoutes() {
 
 export default function App() {
   useAppearanceEffect()
+  const { needsRefresh, updateSW } = useSWUpdate()
 
   return (
     <BrowserRouter>
@@ -52,6 +55,7 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
         <AnimatedRoutes />
       </Suspense>
+      {needsRefresh && <UpdateToast onUpdate={updateSW} />}
     </BrowserRouter>
   )
 }

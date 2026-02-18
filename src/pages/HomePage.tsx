@@ -216,6 +216,8 @@ export default function HomePage() {
         >
           View History
         </button>
+
+        <span className="text-xs text-gray-300 dark:text-gray-600">v{__APP_VERSION__}</span>
       </div>
     </div>
   )
