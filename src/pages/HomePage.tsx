@@ -191,29 +191,36 @@ export default function HomePage() {
         {/* Primary CTA */}
         <div className="w-full flex flex-col gap-3">
           <button
-            onClick={handleScanClick}
+            onClick={() => navigate('/ai-assist')}
             className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
           >
+            Use AI Assistant
+            <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
+              Most accurate · needs ChatGPT app
+            </span>
+          </button>
+
+          <button
+            onClick={handleScanClick}
+            className="w-full py-4 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-2xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
+          >
             Scan a Bill
+            <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
+              Quick · works offline · less accurate
+            </span>
           </button>
 
           {/* ImageCapture handles the hidden file input */}
           <ImageCapture onCapture={handleCapture} triggerCapture={triggerCapture} />
 
-          {/* Secondary action */}
           <button
             onClick={handleManualEntry}
             className="w-full py-4 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-2xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
           >
             Enter Manually
-          </button>
-
-          {/* AI assistant */}
-          <button
-            onClick={() => navigate('/ai-assist')}
-            className="w-full py-4 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-2xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
-          >
-            Use AI Assistant
+            <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
+              Always works · type items yourself
+            </span>
           </button>
         </div>
 

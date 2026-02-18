@@ -54,6 +54,9 @@ export default function AiAssistPage() {
           <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
             Use ChatGPT or Claude to read your bill photo
           </p>
+          <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+            You'll need ChatGPT or a similar AI chatbot open in another app or browser tab.
+          </p>
         </div>
 
         {/* Step 1: Copy Prompt */}

@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react'
-import type { Person } from '../../types'
 
 interface HandoffScreenProps {
-  nextPerson: Person
   onConfirm: () => void
 }
 
 // Brief lockout window to prevent accidental taps during handoff animation
 const LOCKOUT_MS = 1500
 
-export default function HandoffScreen({ nextPerson, onConfirm }: HandoffScreenProps) {
+export default function HandoffScreen({ onConfirm }: HandoffScreenProps) {
   const [locked, setLocked] = useState(true)
   const [visible, setVisible] = useState(false)
 
@@ -32,10 +30,9 @@ export default function HandoffScreen({ nextPerson, onConfirm }: HandoffScreenPr
 
   return (
     <div
-      className={`fixed inset-0 z-40 flex flex-col items-center justify-center px-8 transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-      style={{ backgroundColor: nextPerson.color }}
+      className={`fixed inset-0 z-40 flex flex-col items-center justify-center px-8 bg-gray-900 transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
       aria-live="polite"
-      aria-label={`Pass the phone to ${nextPerson.name}`}
+      aria-label="Pass the phone to the next person"
     >
       {/* Pass icon */}
       <div className="mb-8 opacity-80" aria-hidden="true">
@@ -55,25 +52,21 @@ export default function HandoffScreen({ nextPerson, onConfirm }: HandoffScreenPr
       </div>
 
       {/* Instruction */}
-      <p className="text-white/80 text-lg font-medium mb-4 text-center">Pass the phone to</p>
-
-      {/* Person name — large */}
-      <h1 className="text-white text-5xl font-bold text-center break-words max-w-full mb-12">
-        {nextPerson.name}
-      </h1>
+      <h1 className="text-white text-3xl font-bold text-center mb-2">Pass the phone</h1>
+      <p className="text-white/70 text-lg font-medium mb-12 text-center">to the next person</p>
 
       {/* Confirm button — disabled during lockout */}
       <button
         onClick={locked ? undefined : onConfirm}
         disabled={locked}
-        aria-label={locked ? 'Wait before tapping' : `I'm ${nextPerson.name}, ready to go`}
+        aria-label={locked ? 'Wait before tapping' : 'Ready to continue'}
         className={`w-full max-w-xs min-h-[56px] rounded-2xl text-base font-semibold transition-all duration-300 ${
           locked
             ? 'bg-white/20 text-white/50 cursor-not-allowed'
             : 'bg-white text-gray-900 active:scale-95 active:bg-white/90'
         }`}
       >
-        {locked ? 'Passing…' : `I'm ${nextPerson.name}`}
+        {locked ? 'Passing...' : 'Ready'}
       </button>
 
       {/* Lockout progress bar */}

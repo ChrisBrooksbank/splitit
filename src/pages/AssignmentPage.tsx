@@ -9,7 +9,7 @@ import SharedItemSplitter from '../components/assignment/SharedItemSplitter'
 import StepIndicator from '../components/layout/StepIndicator'
 import type { LineItem, Person } from '../types'
 
-type Step = 'who-are-you' | 'claiming' | 'handoff' | 'done'
+type Step = 'who-are-you' | 'claiming' | 'handoff'
 
 export default function AssignmentPage() {
   const navigate = useNavigate()
@@ -18,15 +18,20 @@ export default function AssignmentPage() {
   const { assignments, portions, toggleAssignment, setAssignees, setPortions, clearPortions } =
     useAssignmentStore()
 
-  // Index into people[] for whose turn it is
-  const [personIndex, setPersonIndex] = useState(0)
+  // Flexible order: track who has finished their turn, and who is currently claiming
+  const [claimedPersonIds, setClaimedPersonIds] = useState<string[]>([])
+  const [currentPersonId, setCurrentPersonId] = useState<string | null>(null)
   const [step, setStep] = useState<Step>('who-are-you')
   const [splitterItemId, setSplitterItemId] = useState<string | null>(null)
-  // Track which items are highlighted as unassigned (after last-person check)
   const [showUnassignedWarning, setShowUnassignedWarning] = useState(false)
 
-  const currentPerson: Person | undefined = people[personIndex]
-  const nextPerson: Person | undefined = people[personIndex + 1]
+  const currentPerson: Person | undefined = people.find((p) => p.id === currentPersonId)
+
+  // People who haven't finished their turn yet, in original array order
+  const remainingPeople = useMemo(
+    () => people.filter((p) => !claimedPersonIds.includes(p.id)),
+    [people, claimedPersonIds]
+  )
 
   // Compute unassigned items
   const unassignedItems = useMemo(
@@ -42,8 +47,8 @@ export default function AssignmentPage() {
 
   // ── Step: "Who are you?" ──────────────────────────────────────────────────
 
-  function handleSelectPerson(index: number) {
-    setPersonIndex(index)
+  function handleSelectPerson(personId: string) {
+    setCurrentPersonId(personId)
     setStep('claiming')
     setShowUnassignedWarning(false)
   }
@@ -71,16 +76,21 @@ export default function AssignmentPage() {
   }
 
   function handleDone() {
-    const isLastPerson = personIndex >= people.length - 1
-    if (isLastPerson) {
-      // Check for unassigned items
+    if (!currentPersonId) return
+    const newClaimed = [...claimedPersonIds, currentPersonId]
+    setClaimedPersonIds(newClaimed)
+
+    // Check if everyone has gone
+    const newRemaining = people.filter((p) => !newClaimed.includes(p.id))
+    if (newRemaining.length === 0) {
+      // Last person — check unassigned
       if (unassignedItems.length > 0) {
         setShowUnassignedWarning(true)
-        // Scroll to top so user can see the warning
         window.scrollTo({ top: 0, behavior: 'smooth' })
+        // Undo the claim so they stay on the claiming screen
+        setClaimedPersonIds(claimedPersonIds)
         return
       }
-      // All assigned — proceed to tips
       navigate('/tips')
     } else {
       setStep('handoff')
@@ -88,8 +98,16 @@ export default function AssignmentPage() {
   }
 
   function handleHandoffConfirm() {
-    setPersonIndex((prev) => prev + 1)
+    setCurrentPersonId(null)
     setStep('who-are-you')
+  }
+
+  function handleFinish() {
+    if (unassignedItems.length > 0) {
+      // Shouldn't happen — button is hidden when items are unassigned
+      return
+    }
+    navigate('/tips')
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -111,21 +129,16 @@ export default function AssignmentPage() {
     )
   }
 
-  if (!currentPerson) {
-    return null
-  }
-
   // ── Handoff screen ────────────────────────────────────────────────────────
 
-  if (step === 'handoff' && nextPerson) {
-    return <HandoffScreen nextPerson={nextPerson} onConfirm={handleHandoffConfirm} />
+  if (step === 'handoff') {
+    return <HandoffScreen onConfirm={handleHandoffConfirm} />
   }
 
   // ── "Who are you?" ────────────────────────────────────────────────────────
 
   if (step === 'who-are-you') {
-    // Show people who haven't gone yet (from personIndex onwards)
-    const remainingPeople = people.slice(personIndex)
+    const allItemsAssigned = unassignedItems.length === 0
 
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
@@ -135,7 +148,7 @@ export default function AssignmentPage() {
         {/* Header */}
         <div className="px-4 pt-2 pb-6">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-            {personIndex === 0 ? 'First up' : 'Your turn'}
+            {claimedPersonIds.length === 0 ? 'First up' : 'Next up'}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
             Who are you?
@@ -146,11 +159,11 @@ export default function AssignmentPage() {
         </div>
 
         {/* Person buttons */}
-        <div className="flex-1 px-4 flex flex-col gap-3 pb-8">
-          {remainingPeople.map((person, idx) => (
+        <div className="flex-1 px-4 flex flex-col gap-3 pb-4">
+          {remainingPeople.map((person) => (
             <button
               key={person.id}
-              onClick={() => handleSelectPerson(personIndex + idx)}
+              onClick={() => handleSelectPerson(person.id)}
               className="w-full py-5 px-6 rounded-2xl text-white text-xl font-bold tracking-tight active:scale-95 transition-transform shadow-sm"
               style={{ backgroundColor: person.color }}
               aria-label={`I am ${person.name}`}
@@ -160,26 +173,45 @@ export default function AssignmentPage() {
           ))}
         </div>
 
-        {/* Progress indicator */}
+        {/* "Everyone's done" button — only when all items assigned */}
+        {allItemsAssigned && (
+          <div className="px-4 pb-4">
+            <button
+              onClick={handleFinish}
+              className="w-full py-4 px-6 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
+              aria-label="Everyone's done, continue to tips"
+            >
+              Everyone's Done
+            </button>
+          </div>
+        )}
+
+        {/* Progress dots */}
         <div className="px-4 pb-8 flex justify-center gap-1.5">
-          {people.map((_, idx) => (
-            <div
-              key={idx}
-              className="h-1.5 rounded-full transition-all"
-              style={{
-                width: idx === personIndex ? 24 : 8,
-                backgroundColor:
-                  idx < personIndex ? '#9CA3AF' : idx === personIndex ? '#111827' : '#E5E7EB',
-              }}
-              aria-hidden="true"
-            />
-          ))}
+          {people.map((p) => {
+            const isClaimed = claimedPersonIds.includes(p.id)
+            return (
+              <div
+                key={p.id}
+                className="h-1.5 rounded-full transition-all"
+                style={{
+                  width: isClaimed ? 8 : 8,
+                  backgroundColor: isClaimed ? '#9CA3AF' : '#E5E7EB',
+                }}
+                aria-hidden="true"
+              />
+            )
+          })}
         </div>
       </div>
     )
   }
 
   // ── Item claiming ─────────────────────────────────────────────────────────
+
+  if (!currentPerson) {
+    return null
+  }
 
   const splitterItem = splitterItemId ? lineItems.find((i) => i.id === splitterItemId) : null
 
@@ -197,7 +229,7 @@ export default function AssignmentPage() {
             aria-hidden="true"
           />
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            {personIndex + 1} of {people.length}
+            {claimedPersonIds.length + 1} of {people.length}
           </span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
@@ -250,18 +282,14 @@ export default function AssignmentPage() {
         })}
       </div>
 
-      {/* Footer — I'm Done */}
+      {/* Footer — always "I'm Done" */}
       <div className="px-4 pb-8 pt-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
         <button
           onClick={handleDone}
           className="w-full py-4 px-6 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
-          aria-label={
-            personIndex >= people.length - 1
-              ? 'Finish and calculate split'
-              : "I'm done, pass phone to next person"
-          }
+          aria-label="I'm done, pass phone to next person"
         >
-          {personIndex >= people.length - 1 ? 'Calculate Split →' : "I'm Done"}
+          I'm Done
         </button>
       </div>
 
