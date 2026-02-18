@@ -4,6 +4,7 @@ import {
   contrastStretch,
   computeOtsuThreshold,
   otsuBinarize,
+  sharpen,
 } from '../../src/services/ocr/imagePreprocessor'
 
 // ---------------------------------------------------------------------------
@@ -227,6 +228,89 @@ describe('otsuBinarize', () => {
     otsuBinarize(pixels, count)
     for (let i = 0; i < count; i++) {
       expect([0, 255]).toContain(pixels[i * 4])
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// sharpen
+// ---------------------------------------------------------------------------
+describe('sharpen', () => {
+  it('leaves a flat (uniform) image unchanged in the interior', () => {
+    // 3x3 image, all gray=128
+    const width = 3
+    const height = 3
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 128
+      pixels[i * 4 + 1] = 128
+      pixels[i * 4 + 2] = 128
+      pixels[i * 4 + 3] = 255
+    }
+    sharpen(pixels, width, height)
+    // Center pixel (1,1) should remain 128: 5*128 - 4*128 = 128
+    const center = (1 * width + 1) * 4
+    expect(pixels[center]).toBe(128)
+  })
+
+  it('enhances edges (bright center with dark neighbors)', () => {
+    // 3x3: center is 200, all neighbors are 100
+    const width = 3
+    const height = 3
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 100
+      pixels[i * 4 + 1] = 100
+      pixels[i * 4 + 2] = 100
+      pixels[i * 4 + 3] = 255
+    }
+    // Set center to 200
+    const center = (1 * width + 1) * 4
+    pixels[center] = 200
+    pixels[center + 1] = 200
+    pixels[center + 2] = 200
+
+    sharpen(pixels, width, height)
+    // 5*200 - 4*100 = 1000 - 400 = 600 → clamped to 255
+    expect(pixels[center]).toBe(255)
+  })
+
+  it('clamps negative values to 0', () => {
+    // 3x3: center is 0, all neighbors are 200
+    const width = 3
+    const height = 3
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 200
+      pixels[i * 4 + 1] = 200
+      pixels[i * 4 + 2] = 200
+      pixels[i * 4 + 3] = 255
+    }
+    // Set center to 0
+    const center = (1 * width + 1) * 4
+    pixels[center] = 0
+    pixels[center + 1] = 0
+    pixels[center + 2] = 0
+
+    sharpen(pixels, width, height)
+    // 5*0 - 4*200 = -800 → clamped to 0
+    expect(pixels[center]).toBe(0)
+  })
+
+  it('preserves alpha channel', () => {
+    const width = 3
+    const height = 3
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 128
+      pixels[i * 4 + 1] = 128
+      pixels[i * 4 + 2] = 128
+      pixels[i * 4 + 3] = 42 // custom alpha
+    }
+    sharpen(pixels, width, height)
+    // All alpha values should remain 42
+    for (let i = 0; i < width * height; i++) {
+      expect(pixels[i * 4 + 3]).toBe(42)
     }
   })
 })

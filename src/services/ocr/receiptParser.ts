@@ -79,6 +79,43 @@ export function parseReceipt(ocrText: string): ParsedReceipt {
   return { lineItems, detectedSubtotal, detectedTax, detectedTotal }
 }
 
+/**
+ * Merge multiple parsed receipts (from multi-photo OCR) into one,
+ * deduplicating items that appear in overlapping photos.
+ * Only used for multi-photo; single-photo preserves intentional duplicates.
+ */
+export function mergeReceipts(receipts: ParsedReceipt[]): ParsedReceipt {
+  // Collect all line items, dedup by normalized key
+  const seen = new Map<string, LineItem>()
+
+  for (const receipt of receipts) {
+    for (const item of receipt.lineItems) {
+      const key = `${normalize(item.name)}|${item.price}|${item.quantity}`
+      const existing = seen.get(key)
+      if (!existing || item.confidence > existing.confidence) {
+        seen.set(key, item)
+      }
+    }
+  }
+
+  // Take first non-null detected totals across all receipts
+  const detectedSubtotal =
+    receipts.find((r) => r.detectedSubtotal !== null)?.detectedSubtotal ?? null
+  const detectedTax = receipts.find((r) => r.detectedTax !== null)?.detectedTax ?? null
+  const detectedTotal = receipts.find((r) => r.detectedTotal !== null)?.detectedTotal ?? null
+
+  return {
+    lineItems: Array.from(seen.values()),
+    detectedSubtotal,
+    detectedTax,
+    detectedTotal,
+  }
+}
+
+function normalize(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -110,7 +147,7 @@ function extractLineItem(line: string): LineItem | null {
   const rawPriceStr = priceMatch[1]
 
   // Determine if the line had a currency symbol prefix (affects confidence)
-  const hasCurrencySymbol = /[£$]/.test(line.slice(0, line.lastIndexOf(rawPriceStr)))
+  const hasCurrencySymbol = /[£$€]/.test(line.slice(0, line.lastIndexOf(rawPriceStr)))
 
   // Check for OCR digit fixes
   const hadOcrFix =

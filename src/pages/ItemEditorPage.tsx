@@ -1,36 +1,57 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBillStore } from '../store/billStore'
-import { parseReceipt } from '../services/ocr/receiptParser'
+import { parseReceipt, mergeReceipts, type ParsedReceipt } from '../services/ocr/receiptParser'
 import LineItemList from '../components/bill/LineItemList'
 import BillSummaryCard from '../components/bill/BillSummaryCard'
 import StepIndicator from '../components/layout/StepIndicator'
+
+/** Read and consume OCR data from sessionStorage (called once). */
+function consumeOcrData(): ParsedReceipt | null {
+  const ocrTexts = sessionStorage.getItem('ocrResults')
+  const ocrText = sessionStorage.getItem('ocrResult')
+
+  sessionStorage.removeItem('ocrResult')
+  sessionStorage.removeItem('ocrResults')
+
+  if (ocrTexts) {
+    const texts: string[] = JSON.parse(ocrTexts)
+    const receipts = texts.filter((t) => t.trim().length > 0).map((t) => parseReceipt(t))
+    return receipts.length > 0 ? mergeReceipts(receipts) : null
+  }
+  if (ocrText) {
+    return parseReceipt(ocrText)
+  }
+  return null
+}
 
 export default function ItemEditorPage() {
   const navigate = useNavigate()
   const { lineItems, setLineItems, addLineItem, updateLineItem, deleteLineItem } = useBillStore()
   const didInit = useRef(false)
 
-  // Populate from OCR results once, only if the store is currently empty
+  // Lazy-initialize OCR-derived state (runs once, during first render)
+  const [ocrInit] = useState(() => {
+    const parsed = consumeOcrData()
+    return {
+      detectedTotal: parsed?.detectedTotal ?? null,
+      hadOcrInput: parsed !== null,
+      parsedItems: parsed?.lineItems ?? [],
+    }
+  })
+
+  // Populate store from OCR results once, only if the store is currently empty
   useEffect(() => {
     if (didInit.current) return
     didInit.current = true
 
-    const ocrText = sessionStorage.getItem('ocrResult')
-    if (!ocrText) return
-
-    // Only auto-populate if the store has no items yet (don't overwrite a persisted session)
     if (lineItems.length > 0) return
-
-    const { lineItems: parsed } = parseReceipt(ocrText)
-    if (parsed.length > 0) {
-      setLineItems(parsed)
+    if (ocrInit.parsedItems.length > 0) {
+      setLineItems(ocrInit.parsedItems)
     }
-
-    // Consume the OCR result so refreshing the editor doesn't re-parse
-    sessionStorage.removeItem('ocrResult')
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const ocrEmpty = ocrInit.hadOcrInput && lineItems.length === 0
   const subtotal = lineItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   function handleAdd(name: string, priceCents: number, quantity: number) {
@@ -56,6 +77,15 @@ export default function ItemEditorPage() {
         </p>
       </div>
 
+      {/* OCR-empty feedback banner */}
+      {ocrEmpty && (
+        <div className="mx-4 mb-4 rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-950 p-3">
+          <p className="text-sm text-amber-900 dark:text-amber-100">
+            No items could be extracted from the scan. Try closer photos or add items manually.
+          </p>
+        </div>
+      )}
+
       {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-4">
         {/* Line item list */}
@@ -69,7 +99,7 @@ export default function ItemEditorPage() {
 
       {/* Sticky footer: totals + continue */}
       <div>
-        <BillSummaryCard subtotalCents={subtotal} />
+        <BillSummaryCard subtotalCents={subtotal} detectedTotalCents={ocrInit.detectedTotal} />
         <div className="px-4 pb-8 pt-3 bg-white dark:bg-gray-900">
           <button
             onClick={handleContinue}

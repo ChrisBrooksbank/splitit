@@ -31,7 +31,10 @@ export async function preprocessImage(file: File): Promise<Blob> {
   // Step 3: Contrast stretch (histogram stretching)
   contrastStretch(pixels, width * height)
 
-  // Step 4: Otsu binarization
+  // Step 4: Sharpen (3x3 Laplacian kernel)
+  sharpen(pixels, width, height)
+
+  // Step 5: Otsu binarization
   otsuBinarize(pixels, width * height)
 
   // Write back and export
@@ -160,6 +163,33 @@ export function computeOtsuThreshold(pixels: Uint8ClampedArray, numPixels: numbe
   }
 
   return bestThreshold
+}
+
+/**
+ * Sharpen grayscale image using a 3x3 Laplacian kernel: [0,-1,0; -1,5,-1; 0,-1,0].
+ * Operates on the R channel (after grayscale). Skips 1px border. Alpha unchanged.
+ */
+export function sharpen(pixels: Uint8ClampedArray, width: number, height: number): void {
+  // Copy pixel data for reading (we write back into `pixels`)
+  const src = new Uint8ClampedArray(pixels)
+
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = (y * width + x) * 4
+      // 3x3 Laplacian sharpening kernel: center=5, cross=-1
+      const val =
+        5 * src[idx] -
+        src[((y - 1) * width + x) * 4] -
+        src[((y + 1) * width + x) * 4] -
+        src[(y * width + (x - 1)) * 4] -
+        src[(y * width + (x + 1)) * 4]
+      const clamped = val < 0 ? 0 : val > 255 ? 255 : val
+      pixels[idx] = clamped
+      pixels[idx + 1] = clamped
+      pixels[idx + 2] = clamped
+      // alpha unchanged
+    }
+  }
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {

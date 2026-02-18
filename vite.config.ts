@@ -50,7 +50,7 @@ export default defineConfig({
             urlPattern: /\.traineddata(\.gz)?$/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'tesseract-lang-data',
+              cacheName: 'tesseract-lang-data-v2',
               expiration: {
                 maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
               },
@@ -60,7 +60,7 @@ export default defineConfig({
             urlPattern: /\.wasm$/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'wasm-cache',
+              cacheName: 'wasm-cache-v2',
               expiration: {
                 maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
               },

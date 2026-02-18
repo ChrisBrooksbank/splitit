@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseReceipt } from '../../src/services/ocr/receiptParser'
+import { parseReceipt, mergeReceipts } from '../../src/services/ocr/receiptParser'
 import { parsePriceCents } from '../../src/utils/receiptPatterns'
 
 // ---------------------------------------------------------------------------
@@ -37,6 +37,14 @@ describe('parsePriceCents', () => {
 
   it('handles zero amount', () => {
     expect(parsePriceCents('0.00')).toBe(0)
+  })
+
+  it('fixes OCR O → 0 in decimal places: 4.OO → 400', () => {
+    expect(parsePriceCents('4.OO')).toBe(400)
+  })
+
+  it('fixes mixed OCR errors in decimal: lO.5O → 1050', () => {
+    expect(parsePriceCents('lO.5O')).toBe(1050)
   })
 })
 
@@ -106,11 +114,13 @@ TAX                  $2.04
 TOTAL               $27.53
 `
     const result = parseReceipt(text)
-    // The $ prefix helps identify price lines; OCR fix applied inside
-    expect(result.lineItems.length).toBeGreaterThanOrEqual(1)
+    expect(result.lineItems).toHaveLength(3)
     // Pasta: $l2.99 → 1299
     const pasta = result.lineItems.find((i) => i.name.includes('Pasta'))
     expect(pasta?.price).toBe(1299)
+    // Garlic Bread: $4.OO → 400
+    const bread = result.lineItems.find((i) => i.name.includes('Garlic Bread'))
+    expect(bread?.price).toBe(400)
   })
 
   // --- Sample 4: Separator lines and noise ---
@@ -312,5 +322,132 @@ TOTAL             $18.88
     const result = parseReceipt(text)
     expect(result.lineItems[0].name).toBe('Chicken Sandwich')
     expect(result.lineItems[1].name).toBe('Garden Salad')
+  })
+
+  // --- Sample 15: Woolpack UK pub receipt with section headers ---
+  it('parses a UK pub receipt with section headers and £ prices', () => {
+    const text = `
+THE WOOLPACK INN
+High Street, Emmerdale
+
+- STARTERS -
+Soup of the Day             £5.50
+Prawn Cocktail              £7.OO
+
+- MAINS -
+Fish and Chips              £l2.95
+Steak & Ale Pie             £l4.50
+2x Side Salad                £7.OO
+
+- DESSERTS -
+Sticky Toffee Pudding        £6.50
+
+Subtotal                   £43.45
+VAT                          £8.69
+Total                      £52.14
+`
+    const result = parseReceipt(text)
+    // Section headers should be skipped
+    expect(result.lineItems.find((i) => i.name.includes('STARTERS'))).toBeUndefined()
+    expect(result.lineItems.find((i) => i.name.includes('MAINS'))).toBeUndefined()
+    expect(result.lineItems.find((i) => i.name.includes('DESSERTS'))).toBeUndefined()
+
+    // Items should be parsed correctly
+    expect(result.lineItems.length).toBeGreaterThanOrEqual(5)
+    const soup = result.lineItems.find((i) => i.name.includes('Soup'))
+    expect(soup?.price).toBe(550)
+    // Prawn Cocktail: £7.OO → 700
+    const prawn = result.lineItems.find((i) => i.name.includes('Prawn'))
+    expect(prawn?.price).toBe(700)
+    // Fish and Chips: £l2.95 → 1295
+    const fish = result.lineItems.find((i) => i.name.includes('Fish'))
+    expect(fish?.price).toBe(1295)
+    // Steak & Ale Pie: £l4.50 → 1450
+    const steak = result.lineItems.find((i) => i.name.includes('Steak'))
+    expect(steak?.price).toBe(1450)
+    // 2x Side Salad: £7.OO → 700 total → 350 each
+    const salad = result.lineItems.find((i) => i.name.includes('Salad'))
+    expect(salad?.quantity).toBe(2)
+    expect(salad?.price).toBe(350)
+
+    expect(result.detectedSubtotal).toBe(4345)
+    expect(result.detectedTax).toBe(869)
+    expect(result.detectedTotal).toBe(5214)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// mergeReceipts tests
+// ---------------------------------------------------------------------------
+
+describe('mergeReceipts', () => {
+  it('deduplicates overlapping items from two photos', () => {
+    const text1 = `
+Burger          $8.99
+Fries           $3.49
+Soda            $2.25
+`
+    const text2 = `
+Fries           $3.49
+Soda            $2.25
+Dessert         $5.00
+`
+    const receipt1 = parseReceipt(text1)
+    const receipt2 = parseReceipt(text2)
+    const merged = mergeReceipts([receipt1, receipt2])
+
+    // Should have 4 unique items, not 6
+    expect(merged.lineItems).toHaveLength(4)
+    const names = merged.lineItems.map((i) => i.name)
+    expect(names).toContain('Burger')
+    expect(names).toContain('Fries')
+    expect(names).toContain('Soda')
+    expect(names).toContain('Dessert')
+  })
+
+  it('keeps the higher-confidence duplicate', () => {
+    const text1 = `
+Burger          $8.99
+`
+    const text2 = `
+Burger          8.99
+`
+    const receipt1 = parseReceipt(text1)
+    const receipt2 = parseReceipt(text2)
+
+    // receipt1 has $ prefix → confidence 1.0, receipt2 has no $ → 0.75
+    const merged = mergeReceipts([receipt1, receipt2])
+    expect(merged.lineItems).toHaveLength(1)
+    expect(merged.lineItems[0].confidence).toBe(1.0)
+  })
+
+  it('takes first non-null detected totals', () => {
+    const text1 = `
+Burger          $8.99
+`
+    const text2 = `
+Fries           $3.49
+TOTAL           $12.48
+`
+    const receipt1 = parseReceipt(text1)
+    const receipt2 = parseReceipt(text2)
+    const merged = mergeReceipts([receipt1, receipt2])
+
+    expect(merged.detectedTotal).toBe(1248)
+  })
+
+  it('preserves different items with same name but different prices', () => {
+    const text1 = `
+Wine            $8.00
+`
+    const text2 = `
+Wine            $12.00
+`
+    const receipt1 = parseReceipt(text1)
+    const receipt2 = parseReceipt(text2)
+    const merged = mergeReceipts([receipt1, receipt2])
+
+    // Same name, different prices → not duplicates
+    expect(merged.lineItems).toHaveLength(2)
   })
 })

@@ -83,7 +83,7 @@ describe('HomePage', () => {
     expect(screen.getByAltText(/captured receipt/i)).toBeInTheDocument()
   })
 
-  it('navigates to /processing on Use This Photo click', async () => {
+  it('navigates to /processing on Use This Photo then Process click', async () => {
     const user = userEvent.setup()
     renderHomePage()
 
@@ -91,7 +91,14 @@ describe('HomePage', () => {
     const input = screen.getByLabelText(/capture or upload receipt photo/i)
     await user.upload(input, file)
 
+    // Use This Photo adds to collection
     await user.click(screen.getByRole('button', { name: /use this photo/i }))
+
+    // Should now show the photo collection with Process button
+    const processBtn = screen.getByRole('button', { name: /process 1 photo$/i })
+    expect(processBtn).toBeInTheDocument()
+
+    await user.click(processBtn)
     expect(mockNavigate).toHaveBeenCalledWith('/processing')
   })
 

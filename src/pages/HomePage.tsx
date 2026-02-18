@@ -1,38 +1,72 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ImageCapture from '../components/camera/ImageCapture'
 import ImagePreview from '../components/camera/ImagePreview'
 import { useSessionRecovery } from '../hooks/useSessionRecovery'
 
+interface CapturedPhoto {
+  file: File
+  previewUrl: string
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
   const [triggerCapture, setTriggerCapture] = useState(false)
-  const [capturedFile, setCapturedFile] = useState<{ file: File; previewUrl: string } | null>(null)
+  const [capturedFiles, setCapturedFiles] = useState<CapturedPhoto[]>([])
+  const [pendingPreview, setPendingPreview] = useState<CapturedPhoto | null>(null)
   const { hasIncompleteSession, recoveryRoute, lineItemCount, peopleCount, discardSession } =
     useSessionRecovery()
 
+  // Revoke blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      capturedFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl))
+      if (pendingPreview) URL.revokeObjectURL(pendingPreview.previewUrl)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleScanClick() {
     setTriggerCapture(true)
-    // Reset trigger after a tick so it can fire again on retake
     setTimeout(() => setTriggerCapture(false), 100)
   }
 
   function handleCapture(file: File, previewUrl: string) {
-    setCapturedFile({ file, previewUrl })
+    setPendingPreview({ file, previewUrl })
   }
 
   function handleRetake() {
-    if (capturedFile) {
-      URL.revokeObjectURL(capturedFile.previewUrl)
+    if (pendingPreview) {
+      URL.revokeObjectURL(pendingPreview.previewUrl)
     }
-    setCapturedFile(null)
-    // Trigger capture immediately for retake
+    setPendingPreview(null)
     handleScanClick()
   }
 
   function handleUsePhoto() {
-    if (!capturedFile) return
-    sessionStorage.setItem('capturedImageUrl', capturedFile.previewUrl)
+    if (!pendingPreview) return
+    setCapturedFiles((prev) => [...prev, pendingPreview])
+    setPendingPreview(null)
+  }
+
+  function handleRemovePhoto(index: number) {
+    setCapturedFiles((prev) => {
+      const removed = prev[index]
+      URL.revokeObjectURL(removed.previewUrl)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
+  function handleProcess() {
+    if (capturedFiles.length === 0) return
+
+    if (capturedFiles.length === 1) {
+      // Single photo: backward-compatible path
+      sessionStorage.setItem('capturedImageUrl', capturedFiles[0].previewUrl)
+    } else {
+      // Multi-photo path
+      const urls = capturedFiles.map((f) => f.previewUrl)
+      sessionStorage.setItem('capturedImageUrls', JSON.stringify(urls))
+    }
     navigate('/processing')
   }
 
@@ -40,14 +74,71 @@ export default function HomePage() {
     navigate('/editor')
   }
 
-  // Show image preview if a photo has been captured
-  if (capturedFile) {
+  // Show image preview if a photo is pending review
+  if (pendingPreview) {
     return (
       <ImagePreview
-        previewUrl={capturedFile.previewUrl}
+        previewUrl={pendingPreview.previewUrl}
         onRetake={handleRetake}
         onUse={handleUsePhoto}
       />
+    )
+  }
+
+  // Show photo collection strip when photos have been captured
+  if (capturedFiles.length > 0) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center px-6">
+        <div className="w-full max-w-sm flex flex-col items-center gap-6">
+          <div className="text-center">
+            <h1 className="text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              SplitIt
+            </h1>
+            <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
+              {capturedFiles.length} photo{capturedFiles.length !== 1 ? 's' : ''} captured
+            </p>
+          </div>
+
+          {/* Photo thumbnails strip */}
+          <div className="w-full flex gap-2 overflow-x-auto py-2">
+            {capturedFiles.map((photo, index) => (
+              <div key={photo.previewUrl} className="relative flex-shrink-0">
+                <img
+                  src={photo.previewUrl}
+                  alt={`Photo ${index + 1}`}
+                  className="w-16 h-20 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                />
+                <button
+                  onClick={() => handleRemovePhoto(index)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full text-xs flex items-center justify-center active:scale-90 transition-transform"
+                  aria-label={`Remove photo ${index + 1}`}
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div className="w-full flex flex-col gap-3">
+            <button
+              onClick={handleProcess}
+              className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
+            >
+              Process {capturedFiles.length} Photo{capturedFiles.length !== 1 ? 's' : ''}
+            </button>
+
+            <ImageCapture onCapture={handleCapture} triggerCapture={triggerCapture} />
+
+            <button
+              onClick={handleScanClick}
+              className="w-full py-4 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-2xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
+            >
+              Add Another Photo
+            </button>
+          </div>
+        </div>
+      </div>
     )
   }
 

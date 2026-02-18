@@ -4,7 +4,7 @@
  * English-only language data (~4MB).
  */
 
-import { createWorker } from 'tesseract.js'
+import { createWorker, PSM } from 'tesseract.js'
 import type { Worker } from 'tesseract.js'
 
 export type OcrProgressCallback = (progress: number, status: string) => void
@@ -32,7 +32,11 @@ async function getWorker(onProgress?: OcrProgressCallback): Promise<Worker> {
         onProgress(msg.progress, msg.status)
       }
     },
-  }).then((worker) => {
+  }).then(async (worker) => {
+    await worker.setParameters({
+      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+      preserve_interword_spaces: '1',
+    })
     workerInstance = worker
     return worker
   })
