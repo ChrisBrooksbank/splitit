@@ -110,7 +110,7 @@ describe('LineItemRow', () => {
       const user = userEvent.setup()
       renderRow(makeItem({ price: 899 }))
       await user.click(screen.getByRole('button', { name: /edit burger/i }))
-      expect(screen.getByLabelText('Price')).toHaveValue(8.99)
+      expect(screen.getByLabelText('Total price')).toHaveValue(8.99)
     })
 
     it('pre-fills quantity input', async () => {
@@ -145,7 +145,7 @@ describe('LineItemRow', () => {
 
       await user.click(screen.getByRole('button', { name: /edit burger/i }))
 
-      const priceInput = screen.getByLabelText('Price')
+      const priceInput = screen.getByLabelText('Total price')
       await user.clear(priceInput)
       await user.type(priceInput, '7.50')
 

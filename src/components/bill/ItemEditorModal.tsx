@@ -52,7 +52,9 @@ export default function ItemEditorModal({
     const parsedPrice = Math.round(parseFloat(price) * 100)
     if (isNaN(parsedPrice) || parsedPrice < 0) return
     const parsedQty = Math.max(1, parseInt(qty, 10) || 1)
-    onSave(trimmedName, parsedPrice, parsedQty)
+    // User enters the total price for the quantity; convert to unit price
+    const unitPrice = parsedQty > 1 ? Math.round(parsedPrice / parsedQty) : parsedPrice
+    onSave(trimmedName, unitPrice, parsedQty)
   }
 
   return (
@@ -118,7 +120,7 @@ export default function ItemEditorModal({
               htmlFor="item-price"
               className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5"
             >
-              Price
+              Total price
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-gray-500 dark:text-gray-400">

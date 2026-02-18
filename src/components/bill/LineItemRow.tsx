@@ -96,7 +96,7 @@ export default function LineItemRow({ item, onUpdate, onDelete }: LineItemRowPro
         <ItemEditorModal
           title="Edit Item"
           initialName={item.name}
-          initialPrice={(item.price / 100).toFixed(2)}
+          initialPrice={((item.price * item.quantity) / 100).toFixed(2)}
           initialQty={String(item.quantity)}
           saveLabel="Save Changes"
           onSave={handleSave}

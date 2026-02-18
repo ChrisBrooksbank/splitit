@@ -13,7 +13,7 @@ describe('ItemEditorModal', () => {
   it('renders name, price, and quantity inputs', () => {
     render(<ItemEditorModal title="Add Item" saveLabel="Add" onSave={vi.fn()} onClose={vi.fn()} />)
     expect(screen.getByLabelText('Item name')).toBeInTheDocument()
-    expect(screen.getByLabelText('Price')).toBeInTheDocument()
+    expect(screen.getByLabelText('Total price')).toBeInTheDocument()
     expect(screen.getByLabelText('Qty')).toBeInTheDocument()
   })
 
@@ -30,7 +30,7 @@ describe('ItemEditorModal', () => {
       />
     )
     expect(screen.getByLabelText('Item name')).toHaveValue('Burger')
-    expect(screen.getByLabelText('Price')).toHaveValue(12.99)
+    expect(screen.getByLabelText('Total price')).toHaveValue(12.99)
     expect(screen.getByLabelText('Qty')).toHaveValue(2)
   })
 
@@ -42,12 +42,13 @@ describe('ItemEditorModal', () => {
     )
 
     await user.type(screen.getByLabelText('Item name'), 'Pizza')
-    await user.type(screen.getByLabelText('Price'), '14.99')
+    await user.type(screen.getByLabelText('Total price'), '14.99')
     await user.clear(screen.getByLabelText('Qty'))
     await user.type(screen.getByLabelText('Qty'), '2')
     await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
-    expect(onSave).toHaveBeenCalledWith('Pizza', 1499, 2)
+    // 14.99 total / 2 = 750 unit price (rounded)
+    expect(onSave).toHaveBeenCalledWith('Pizza', 750, 2)
   })
 
   it('converts price to integer cents', async () => {
@@ -56,7 +57,7 @@ describe('ItemEditorModal', () => {
     render(<ItemEditorModal title="Add Item" saveLabel="Add" onSave={onSave} onClose={vi.fn()} />)
 
     await user.type(screen.getByLabelText('Item name'), 'Coffee')
-    await user.type(screen.getByLabelText('Price'), '3.50')
+    await user.type(screen.getByLabelText('Total price'), '3.50')
     await user.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(onSave).toHaveBeenCalledWith('Coffee', 350, 1)
@@ -67,7 +68,7 @@ describe('ItemEditorModal', () => {
     const user = userEvent.setup()
     render(<ItemEditorModal title="Add Item" saveLabel="Add" onSave={onSave} onClose={vi.fn()} />)
 
-    await user.type(screen.getByLabelText('Price'), '5.00')
+    await user.type(screen.getByLabelText('Total price'), '5.00')
     await user.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(onSave).not.toHaveBeenCalled()
@@ -101,7 +102,7 @@ describe('ItemEditorModal', () => {
     render(<ItemEditorModal title="Add Item" saveLabel="Add" onSave={onSave} onClose={vi.fn()} />)
 
     await user.type(screen.getByLabelText('Item name'), '  Salad  ')
-    await user.type(screen.getByLabelText('Price'), '9.00')
+    await user.type(screen.getByLabelText('Total price'), '9.00')
     await user.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(onSave).toHaveBeenCalledWith('Salad', 900, 1)
@@ -113,7 +114,7 @@ describe('ItemEditorModal', () => {
     render(<ItemEditorModal title="Add Item" saveLabel="Add" onSave={onSave} onClose={vi.fn()} />)
 
     await user.type(screen.getByLabelText('Item name'), 'Tea')
-    await user.type(screen.getByLabelText('Price'), '2.50')
+    await user.type(screen.getByLabelText('Total price'), '2.50')
     await user.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(onSave).toHaveBeenCalledWith('Tea', 250, 1)

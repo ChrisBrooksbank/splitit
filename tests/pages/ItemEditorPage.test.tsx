@@ -119,7 +119,7 @@ describe('ItemEditorPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Add item' }))
     await user.type(screen.getByLabelText('Item name'), 'Pizza')
-    await user.type(screen.getByLabelText('Price'), '14.99')
+    await user.type(screen.getByLabelText('Total price'), '14.99')
     await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
     expect(screen.getByLabelText(/edit pizza/i)).toBeInTheDocument()
