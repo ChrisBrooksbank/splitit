@@ -209,13 +209,22 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* History link */}
-        <button
-          onClick={() => navigate('/history')}
-          className="text-sm text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          View History
-        </button>
+        {/* Footer links */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/history')}
+            className="text-sm text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            View History
+          </button>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
+          <button
+            onClick={() => navigate('/settings')}
+            className="text-sm text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            Settings
+          </button>
+        </div>
 
         <span className="text-xs text-gray-300 dark:text-gray-600">v{__APP_VERSION__}</span>
       </div>

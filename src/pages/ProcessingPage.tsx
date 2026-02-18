@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { preprocessImage } from '../services/ocr/imagePreprocessor'
 import { recognize } from '../services/ocr/tesseractService'
+import { recognizeWithGemini } from '../services/ocr/geminiService'
+import { mergeReceipts, type ParsedReceipt } from '../services/ocr/receiptParser'
+import { useSettingsStore } from '../store/settingsStore'
+
+type OcrMethod = 'gemini' | 'tesseract'
 
 export default function ProcessingPage() {
   const navigate = useNavigate()
@@ -9,6 +14,9 @@ export default function ProcessingPage() {
   const [progress, setProgress] = useState(0)
   const [label, setLabel] = useState('Starting…')
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
+  const [method, setMethod] = useState<OcrMethod | null>(null)
+
+  const geminiApiKey = useSettingsStore((s) => s.geminiApiKey)
 
   useEffect(() => {
     if (hasStarted.current) return
@@ -31,6 +39,60 @@ export default function ProcessingPage() {
 
     async function processPhotos() {
       const totalPhotos = urls.length
+      const hasGemini = geminiApiKey.length > 0
+
+      if (hasGemini) {
+        // --- Gemini-first path ---
+        setMethod('gemini')
+        setLabel('Analyzing with AI…')
+        setProgress(0.1)
+
+        try {
+          const parsedReceipts: ParsedReceipt[] = []
+
+          for (let i = 0; i < totalPhotos; i++) {
+            const photoLabel =
+              totalPhotos > 1 ? `AI scanning photo ${i + 1} of ${totalPhotos}…` : 'Analyzing with AI…'
+            setLabel(photoLabel)
+            setProgress((i + 0.3) / totalPhotos)
+
+            const response = await fetch(urls[i])
+            const blob = await response.blob()
+            const file = new File([blob], `receipt-${i}.jpg`, { type: blob.type || 'image/jpeg' })
+
+            const parsed = await recognizeWithGemini(file, geminiApiKey)
+            parsedReceipts.push(parsed)
+            setProgress((i + 0.9) / totalPhotos)
+          }
+
+          // Store structured result directly (already parsed)
+          const merged = parsedReceipts.length > 1 ? mergeReceipts(parsedReceipts) : parsedReceipts[0]
+          sessionStorage.setItem('ocrParsedResult', JSON.stringify(merged))
+
+          // Clean up image URLs
+          if (isMulti) {
+            sessionStorage.removeItem('capturedImageUrls')
+          } else {
+            sessionStorage.removeItem('capturedImageUrl')
+          }
+
+          setProgress(1)
+          setLabel('Done')
+          navigate('/editor', { replace: true })
+          return
+        } catch {
+          // Gemini failed — fall through to Tesseract
+          setMethod('tesseract')
+          setLabel('AI unavailable, using local OCR…')
+          setProgress(0)
+        }
+      }
+
+      // --- Tesseract path (default or fallback) ---
+      if (!method || method === 'tesseract') {
+        setMethod('tesseract')
+      }
+
       const texts: string[] = []
 
       for (let i = 0; i < totalPhotos; i++) {
@@ -95,7 +157,7 @@ export default function ProcessingPage() {
     }
 
     processPhotos()
-  }, [navigate])
+  }, [navigate, geminiApiKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const progressPercent = Math.round(progress * 100)
 
@@ -113,6 +175,13 @@ export default function ProcessingPage() {
 
       {/* Processing UI — anchored to bottom */}
       <div className="relative z-10 w-full max-w-sm px-6 pb-16 flex flex-col items-center gap-6">
+        {/* Method badge */}
+        {method && (
+          <span className="text-xs text-white/50 tracking-wider uppercase">
+            {method === 'gemini' ? 'Gemini AI' : 'Local OCR'}
+          </span>
+        )}
+
         {/* Stage label */}
         <p className="text-white text-base font-medium tracking-wide" aria-live="polite">
           {label}

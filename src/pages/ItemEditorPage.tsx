@@ -8,6 +8,19 @@ import StepIndicator from '../components/layout/StepIndicator'
 
 /** Read and consume OCR data from sessionStorage (called once). */
 function consumeOcrData(): ParsedReceipt | null {
+  // Check for Gemini pre-parsed result first
+  const parsedJson = sessionStorage.getItem('ocrParsedResult')
+  sessionStorage.removeItem('ocrParsedResult')
+
+  if (parsedJson) {
+    try {
+      return JSON.parse(parsedJson) as ParsedReceipt
+    } catch {
+      // fall through to Tesseract results
+    }
+  }
+
+  // Tesseract raw text results
   const ocrTexts = sessionStorage.getItem('ocrResults')
   const ocrText = sessionStorage.getItem('ocrResult')
 
