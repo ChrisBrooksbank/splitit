@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { parseAiResponse } from '../services/aiImport/parseAiResponse'
 import { useBillStore } from '../store/billStore'
 
-const PROMPT = `Read this restaurant bill/receipt photo and extract every line item. Return ONLY a JSON object in this exact format, no other text:
+const PROMPT = `Read these restaurant bill/receipt photos and extract every line item. If there are multiple photos, they are parts of the same bill — combine them into one list and remove any duplicates from overlapping sections. Return ONLY a JSON object in this exact format, no other text:
 
 {"items":[{"name":"Item Name","price":12.99,"qty":1}]}
 
@@ -51,33 +51,31 @@ export default function AiAssistPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
             AI Assistant
           </h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
             Use ChatGPT or Claude to read your bill photo
           </p>
         </div>
 
         {/* Step 1: Copy Prompt */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Step 1: Copy this prompt
+          <h2 className="text-base font-medium text-gray-700 dark:text-gray-300">
+            Step 1: Copy the prompt
           </h2>
-          <pre className="whitespace-pre-wrap text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 select-all">
-            {PROMPT}
-          </pre>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Open ChatGPT or Claude, attach your bill photo(s), and paste the prompt. Multiple photos
+            of the same bill are fine.
+          </p>
           <button
             onClick={handleCopy}
-            className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl active:scale-95 transition-transform"
+            className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-xl active:scale-95 transition-transform"
           >
-            {copied ? 'Copied!' : 'Copy to Clipboard'}
+            {copied ? 'Copied!' : 'Copy Prompt to Clipboard'}
           </button>
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            Open ChatGPT or Claude, attach your bill photo(s), and paste this prompt.
-          </p>
         </div>
 
         {/* Step 2: Paste Response */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <h2 className="text-base font-medium text-gray-700 dark:text-gray-300">
             Step 2: Paste the AI response
           </h2>
           <textarea
@@ -85,13 +83,13 @@ export default function AiAssistPage() {
             onChange={(e) => setResponse(e.target.value)}
             placeholder="Paste the JSON response here..."
             rows={6}
-            className="w-full text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+            className="w-full text-base text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
           />
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <button
             onClick={handleImport}
             disabled={!response.trim()}
-            className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
+            className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
           >
             Import Items
           </button>
@@ -100,7 +98,7 @@ export default function AiAssistPage() {
         {/* Back link */}
         <button
           onClick={() => navigate('/')}
-          className="text-sm text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          className="text-base text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           Back to Home
         </button>
