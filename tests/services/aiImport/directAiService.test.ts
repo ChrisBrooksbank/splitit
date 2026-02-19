@@ -146,4 +146,49 @@ describe('processReceiptWithAi', () => {
       ).rejects.toThrow('Forbidden')
     })
   })
+
+  describe('Gemini provider', () => {
+    it('calls Gemini API with correct payload and returns response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          candidates: [
+            { content: { parts: [{ text: '{"items":[{"name":"Pizza","price":12.00,"qty":1}]}' }] } },
+          ],
+        }),
+      })
+
+      const result = await processReceiptWithAi(
+        [makeFile()],
+        'gemini',
+        'AIzaTestKey123'
+      )
+
+      expect(mockFetch).toHaveBeenCalledOnce()
+      const [url, options] = mockFetch.mock.calls[0]
+      expect(url).toContain('generativelanguage.googleapis.com')
+      expect(url).toContain('key=AIzaTestKey123')
+
+      const body = JSON.parse(options.body)
+      // 1 text + 1 image
+      expect(body.contents[0].parts).toHaveLength(2)
+      expect(body.contents[0].parts[0].text).toBeDefined()
+      expect(body.contents[0].parts[1].inline_data).toBeDefined()
+      expect(body.contents[0].parts[1].inline_data.mime_type).toBe('image/jpeg')
+
+      expect(result).toBe('{"items":[{"name":"Pizza","price":12.00,"qty":1}]}')
+    })
+
+    it('throws on Gemini API error', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: { message: 'API key not valid' } }),
+      })
+
+      await expect(
+        processReceiptWithAi([makeFile()], 'gemini', 'bad-key')
+      ).rejects.toThrow('API key not valid')
+    })
+  })
 })

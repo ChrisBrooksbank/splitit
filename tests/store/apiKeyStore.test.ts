@@ -13,9 +13,14 @@ describe('apiKeyStore', () => {
     expect(state.apiKey).toBe('')
   })
 
-  it('sets provider', () => {
+  it('sets provider to anthropic', () => {
     useApiKeyStore.getState().setProvider('anthropic')
     expect(useApiKeyStore.getState().provider).toBe('anthropic')
+  })
+
+  it('sets provider to gemini', () => {
+    useApiKeyStore.getState().setProvider('gemini')
+    expect(useApiKeyStore.getState().provider).toBe('gemini')
   })
 
   it('sets API key', () => {
