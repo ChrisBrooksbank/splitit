@@ -215,7 +215,7 @@ export default function AiAssistPage() {
             {/* Key info & actions */}
             <div className="flex flex-col gap-2 items-center">
               <p className="text-xs text-gray-400 dark:text-gray-500">
-                Using {provider === 'openai' ? 'OpenAI' : 'Anthropic'} ·{' '}
+                Using {provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Anthropic' : 'Gemini'} ·{' '}
                 <button
                   onClick={handleRemoveKey}
                   className="underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -301,7 +301,7 @@ export default function AiAssistPage() {
 
             {/* Provider selector */}
             <div className="flex gap-2">
-              {(['openai', 'anthropic'] as const).map((p) => (
+              {(['openai', 'anthropic', 'gemini'] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setProviderDraft(p)}
@@ -311,7 +311,7 @@ export default function AiAssistPage() {
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                   }`}
                 >
-                  {p === 'openai' ? 'OpenAI' : 'Anthropic'}
+                  {p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Anthropic' : 'Gemini'}
                 </button>
               ))}
             </div>
@@ -322,7 +322,11 @@ export default function AiAssistPage() {
               value={keyDraft}
               onChange={(e) => setKeyDraft(e.target.value)}
               placeholder={
-                providerDraft === 'openai' ? 'sk-...' : 'sk-ant-...'
+                providerDraft === 'openai'
+                  ? 'sk-...'
+                  : providerDraft === 'anthropic'
+                    ? 'sk-ant-...'
+                    : 'AIza...'
               }
               className="w-full text-base text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
             />

@@ -30,6 +30,9 @@ export async function processReceiptWithAi(
   if (provider === 'openai') {
     return callOpenAi(base64Images, apiKey)
   }
+  if (provider === 'gemini') {
+    return callGemini(base64Images, apiKey)
+  }
   return callAnthropic(base64Images, apiKey)
 }
 
@@ -123,4 +126,48 @@ async function callAnthropic(
     content: { text: string }[]
   }
   return data.content[0].text
+}
+
+async function callGemini(
+  base64Images: string[],
+  apiKey: string
+): Promise<string> {
+  const imageParts = base64Images.map((dataUrl) => {
+    const [meta, data] = dataUrl.split(',')
+    const mimeType = meta.match(/data:(.*?);/)?.[1] ?? 'image/jpeg'
+    return {
+      inline_data: {
+        mime_type: mimeType,
+        data,
+      },
+    }
+  })
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: PROMPT }, ...imageParts],
+          },
+        ],
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}))
+    const msg =
+      (body as { error?: { message?: string } }).error?.message ??
+      `Gemini API error (${response.status})`
+    throw new Error(msg)
+  }
+
+  const data = (await response.json()) as {
+    candidates: { content: { parts: { text: string }[] } }[]
+  }
+  return data.candidates[0].content.parts[0].text
 }
