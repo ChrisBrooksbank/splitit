@@ -1,10 +1,50 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trash2, Receipt, FileEdit, ImageIcon } from 'lucide-react'
+import { ArrowLeft, Trash2, Receipt, FileEdit, ImageIcon, XCircle } from 'lucide-react'
 import { useHistoryStore } from '../store/historyStore'
 import { useBillStore } from '../store/billStore'
 import { formatCurrency } from '../utils/formatCurrency'
 import type { BillSession, Person, LineItem, PersonTotal } from '../types'
+
+// ---------------------------------------------------------------------------
+// Confirmation dialog
+// ---------------------------------------------------------------------------
+
+interface ConfirmDialogProps {
+  title: string
+  message: string
+  confirmLabel: string
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onCancel}>
+      <div
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl mx-6 max-w-sm w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{message}</p>
+        <div className="mt-5 flex gap-3 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-red-500 active:bg-red-700 transition-colors"
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Read-only PersonSummaryCard (reused from SummaryPage pattern)
@@ -163,9 +203,11 @@ function SessionDetailView({ session, onBack }: SessionDetailProps) {
 
 export default function HistoryPage() {
   const navigate = useNavigate()
-  const { sessions, deleteSession } = useHistoryStore()
+  const { sessions, deleteSession, reset } = useHistoryStore()
   const { setLineItems } = useBillStore()
   const [selectedSession, setSelectedSession] = useState<BillSession | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [confirmClearAll, setConfirmClearAll] = useState(false)
 
   function handleResumeDraft(session: BillSession) {
     setLineItems(session.lineItems)
@@ -189,10 +231,24 @@ export default function HistoryPage() {
           <ArrowLeft size={14} className="inline -mt-0.5 mr-1" />
           Back
         </button>
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-          History
-        </h1>
-        <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">Your past bills</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              History
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">Your past bills</p>
+          </div>
+          {sessions.length > 0 && (
+            <button
+              onClick={() => setConfirmClearAll(true)}
+              className="text-sm text-red-400 active:text-red-600 transition-colors flex items-center gap-1 min-h-[44px] px-2"
+              aria-label="Clear all history"
+            >
+              <XCircle size={14} />
+              Clear all
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Session list */}
@@ -284,7 +340,7 @@ export default function HistoryPage() {
                         </button>
                       )}
                       <button
-                        onClick={() => deleteSession(session.id)}
+                        onClick={() => setConfirmDeleteId(session.id)}
                         className="text-sm text-red-400 active:text-red-600 transition-colors"
                         aria-label={`Delete bill from ${dateStr}`}
                       >
@@ -299,6 +355,34 @@ export default function HistoryPage() {
           </ul>
         )}
       </div>
+
+      {/* Delete single item confirmation */}
+      {confirmDeleteId && (
+        <ConfirmDialog
+          title="Delete bill"
+          message="Are you sure you want to delete this bill? This cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={() => {
+            deleteSession(confirmDeleteId)
+            setConfirmDeleteId(null)
+          }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+
+      {/* Clear all confirmation */}
+      {confirmClearAll && (
+        <ConfirmDialog
+          title="Clear all history"
+          message={`Are you sure you want to delete all ${sessions.length} bill${sessions.length !== 1 ? 's' : ''}? This cannot be undone.`}
+          confirmLabel="Clear all"
+          onConfirm={() => {
+            reset()
+            setConfirmClearAll(false)
+          }}
+          onCancel={() => setConfirmClearAll(false)}
+        />
+      )}
     </div>
   )
 }
