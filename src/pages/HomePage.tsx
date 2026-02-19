@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Sparkles,
+  Camera,
+  PenLine,
+  Clock,
+  Play,
+  RefreshCw,
+  ImagePlus,
+  ScanLine,
+  X,
+} from 'lucide-react'
 import ImageCapture from '../components/camera/ImageCapture'
 import ImagePreview from '../components/camera/ImagePreview'
 import { useSessionRecovery } from '../hooks/useSessionRecovery'
@@ -115,7 +126,7 @@ export default function HomePage() {
                   className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full text-xs flex items-center justify-center active:scale-90 transition-transform"
                   aria-label={`Remove photo ${index + 1}`}
                 >
-                  &times;
+                  <X size={12} />
                 </button>
               </div>
             ))}
@@ -127,6 +138,7 @@ export default function HomePage() {
               onClick={handleProcess}
               className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
             >
+              <ScanLine size={18} className="inline -mt-0.5 mr-1.5" />
               Process {capturedFiles.length} Photo{capturedFiles.length !== 1 ? 's' : ''}
             </button>
 
@@ -136,6 +148,7 @@ export default function HomePage() {
               onClick={handleScanClick}
               className="w-full py-4 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-2xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
             >
+              <ImagePlus size={18} className="inline -mt-0.5 mr-1.5" />
               Add Another Photo
             </button>
           </div>
@@ -177,6 +190,7 @@ export default function HomePage() {
                 className="flex-1 rounded-xl bg-amber-900 dark:bg-amber-700 py-2.5 text-sm font-medium text-white active:scale-95 transition-transform"
                 aria-label="Continue previous bill"
               >
+                <Play size={14} className="inline -mt-0.5 mr-1" />
                 Continue
               </button>
               <button
@@ -184,6 +198,7 @@ export default function HomePage() {
                 className="flex-1 rounded-xl border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 py-2.5 text-sm font-medium text-amber-900 dark:text-amber-100 active:scale-95 transition-transform"
                 aria-label="Discard previous bill and start fresh"
               >
+                <RefreshCw size={14} className="inline -mt-0.5 mr-1" />
                 Start Fresh
               </button>
             </div>
@@ -196,6 +211,7 @@ export default function HomePage() {
             onClick={() => navigate('/ai-assist')}
             className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
           >
+            <Sparkles size={18} className="inline -mt-0.5 mr-1.5" />
             Use AI Assistant
             <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
               {hasApiKey
@@ -208,6 +224,7 @@ export default function HomePage() {
             onClick={handleScanClick}
             className="w-full py-4 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-2xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
           >
+            <Camera size={18} className="inline -mt-0.5 mr-1.5" />
             Scan a Bill
             <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
               Quick · works offline · less accurate
@@ -221,6 +238,7 @@ export default function HomePage() {
             onClick={handleManualEntry}
             className="w-full py-4 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-2xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
           >
+            <PenLine size={18} className="inline -mt-0.5 mr-1.5" />
             Enter Manually
             <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
               Always works · type items yourself
@@ -233,6 +251,7 @@ export default function HomePage() {
           onClick={() => navigate('/history')}
           className="text-sm text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
+          <Clock size={14} className="inline -mt-0.5 mr-1" />
           View History
         </button>
 

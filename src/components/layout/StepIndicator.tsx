@@ -1,14 +1,17 @@
+import { List, Users, Tag, Percent, CheckCircle2, type LucideIcon } from 'lucide-react'
+
 interface Step {
   label: string
   route: string
+  icon: LucideIcon
 }
 
 const STEPS: Step[] = [
-  { label: 'Items', route: '/editor' },
-  { label: 'People', route: '/people' },
-  { label: 'Assign', route: '/assign' },
-  { label: 'Tips', route: '/tips' },
-  { label: 'Done', route: '/summary' },
+  { label: 'Items', route: '/editor', icon: List },
+  { label: 'People', route: '/people', icon: Users },
+  { label: 'Assign', route: '/assign', icon: Tag },
+  { label: 'Tips', route: '/tips', icon: Percent },
+  { label: 'Done', route: '/summary', icon: CheckCircle2 },
 ]
 
 interface StepIndicatorProps {
@@ -29,16 +32,17 @@ export default function StepIndicator({ currentRoute }: StepIndicatorProps) {
 
         return (
           <div key={step.route} className="flex items-center">
-            {/* Step dot + label */}
+            {/* Step icon + label */}
             <div className="flex flex-col items-center gap-1">
-              <div
+              <step.icon
+                size={14}
                 className={[
-                  'w-2 h-2 rounded-full transition-all duration-300',
+                  'transition-all duration-300',
                   isCompleted
-                    ? 'bg-gray-900 dark:bg-gray-100'
+                    ? 'text-gray-900 dark:text-gray-100'
                     : isCurrent
-                      ? 'bg-gray-900 dark:bg-gray-100'
-                      : 'bg-gray-300 dark:bg-gray-600',
+                      ? 'text-gray-900 dark:text-gray-100'
+                      : 'text-gray-300 dark:text-gray-600',
                 ].join(' ')}
                 aria-hidden="true"
               />
@@ -61,7 +65,7 @@ export default function StepIndicator({ currentRoute }: StepIndicatorProps) {
             {index < STEPS.length - 1 && (
               <div
                 className={[
-                  'h-px w-8 mx-1.5 mb-3.5 transition-all duration-300',
+                  'h-px w-8 mx-1.5 mb-4 transition-all duration-300',
                   isCompleted ? 'bg-gray-900 dark:bg-gray-100' : 'bg-gray-200 dark:bg-gray-600',
                 ].join(' ')}
                 aria-hidden="true"

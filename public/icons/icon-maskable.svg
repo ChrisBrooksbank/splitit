@@ -1,39 +1,64 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#4F46E5" rx="0"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#4338CA"/>
+    </linearGradient>
+  </defs>
 
-  <!-- Background circle (non-maskable only) -->
-  
+  <!-- Full square background for maskable -->
+  <rect width="512" height="512" fill="url(#bg)"/>
 
-  <!-- Receipt shadow -->
-  <rect x="155.64800000000002" y="124.928" width="212.99200000000002" height="278.528" rx="12.288" fill="rgba(0,0,0,0.15)"/>
+  <!-- Content scaled to 80% and centered for maskable safe zone -->
+  <g transform="translate(256, 256) scale(0.75) translate(-256, -256)">
 
-  <!-- Receipt body -->
-  <path d="M161.79200000000003,116.736 L350.208,116.736
-           Q362.49600000000004,116.736 362.49600000000004,129.024
-           L362.49600000000004,395.264 L167.25333333333336,405.504 L185.0026666666667,395.264 L202.75200000000004,405.504 L220.50133333333338,395.264 L238.25066666666672,405.504 L256,395.264 L273.7493333333333,405.504 L291.49866666666674,395.264 L309.24800000000005,405.504 L326.99733333333336,395.264 L344.74666666666667,405.504 L362.49600000000004,395.264 
-           L149.50400000000002,395.264
-           L149.50400000000002,129.024
-           Q149.50400000000002,116.736 161.79200000000003,116.736 Z"
-        fill="white"/>
+    <!-- Left receipt shadow -->
+    <g transform="rotate(-10, 256, 68)">
+      <path d="M124,68 L236,68 Q252,68 252,84 L252,392
+               L228,418 L204,392 L180,418 L156,392 L132,418 L108,392
+               L108,84 Q108,68 124,68 Z"
+            fill="#2e1065" fill-opacity="0.25" transform="translate(4, 6)"/>
+    </g>
 
-  <!-- Receipt lines -->
-  <rect x="187.84256000000002" y="178.01216" width="103.8046446590471" height="9.0112" rx="4.5056" fill="#C7D2FE"/>
-  <rect x="187.84256000000002" y="218.39872000000003" width="111.49022454389025" height="9.0112" rx="4.5056" fill="#C7D2FE"/>
-  <rect x="187.84256000000002" y="258.78528" width="118.34152463289045" height="9.0112" rx="4.5056" fill="#E0E7FF"/>
-  <rect x="187.84256000000002" y="299.17184" width="61.341696000000006" height="9.0112" rx="4.5056" fill="#E0E7FF"/>
+    <!-- Right receipt shadow -->
+    <g transform="rotate(10, 256, 68)">
+      <path d="M276,68 L388,68 Q404,68 404,84 L404,392
+               L380,418 L356,392 L332,418 L308,392 L284,418 L260,392
+               L260,84 Q260,68 276,68 Z"
+            fill="#2e1065" fill-opacity="0.25" transform="translate(4, 6)"/>
+    </g>
 
-  <!-- Dotted line above total -->
-  <line x1="181.45280000000002" y1="320.06144" x2="330.54720000000003" y2="320.06144"
-        stroke="#C7D2FE" stroke-width="4.9152000000000005" stroke-dasharray="8.192 6.144"/>
+    <!-- Left receipt -->
+    <g transform="rotate(-10, 256, 68)">
+      <path d="M124,68 L236,68 Q252,68 252,84 L252,392
+               L228,418 L204,392 L180,418 L156,392 L132,418 L108,392
+               L108,84 Q108,68 124,68 Z"
+            fill="white"/>
+      <rect x="128" y="112" width="100" height="18" rx="9" fill="#A5B4FC"/>
+      <rect x="128" y="150" width="72" height="18" rx="9" fill="#C7D2FE"/>
+      <rect x="128" y="198" width="86" height="18" rx="9" fill="#DDD6FE"/>
+      <line x1="128" y1="244" x2="232" y2="244" stroke="#C7D2FE" stroke-width="4" stroke-dasharray="12 8"/>
+      <rect x="148" y="268" width="84" height="22" rx="11" fill="#4F46E5"/>
+    </g>
 
-  <!-- Total line (bolder) -->
-  <rect x="234.70080000000002" y="336.77312" width="89.45664000000001" height="11.468800000000002" rx="5.734400000000001" fill="#4F46E5"/>
+    <!-- Right receipt -->
+    <g transform="rotate(10, 256, 68)">
+      <path d="M276,68 L388,68 Q404,68 404,84 L404,392
+               L380,418 L356,392 L332,418 L308,392 L284,418 L260,392
+               L260,84 Q260,68 276,68 Z"
+            fill="white"/>
+      <rect x="280" y="112" width="100" height="18" rx="9" fill="#A5B4FC"/>
+      <rect x="280" y="150" width="72" height="18" rx="9" fill="#C7D2FE"/>
+      <rect x="280" y="198" width="86" height="18" rx="9" fill="#DDD6FE"/>
+      <line x1="280" y1="244" x2="384" y2="244" stroke="#C7D2FE" stroke-width="4" stroke-dasharray="12 8"/>
+      <rect x="290" y="268" width="84" height="22" rx="11" fill="#4F46E5"/>
+    </g>
 
-  <!-- Split symbol: two arrows pointing apart -->
-  <g transform="translate(315.63776000000007, 139.01824)">
-    <!-- Scissors / split icon -->
-    <circle cx="0" cy="0" r="26.624000000000002" fill="#4F46E5"/>
-    <line x1="-12.288" y1="-8.192" x2="12.288" y2="8.192" stroke="white" stroke-width="5.734400000000001" stroke-linecap="round"/>
-    <line x1="12.288" y1="-8.192" x2="-12.288" y2="8.192" stroke="white" stroke-width="5.734400000000001" stroke-linecap="round"/>
+    <!-- Split accent -->
+    <g transform="translate(256, 340)">
+      <circle cx="0" cy="0" r="22" fill="#F59E0B"/>
+      <rect x="-8" y="-3" width="16" height="6" rx="3" fill="white"/>
+    </g>
+
   </g>
 </svg>

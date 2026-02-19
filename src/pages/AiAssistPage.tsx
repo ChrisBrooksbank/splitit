@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Camera,
+  ImagePlus,
+  Sparkles,
+  Clipboard,
+  Download,
+  ArrowLeft,
+  X,
+  KeyRound,
+  Save,
+} from 'lucide-react'
 import { parseAiResponse } from '../services/aiImport/parseAiResponse'
 import { processReceiptWithAi } from '../services/aiImport/directAiService'
 import { useBillStore } from '../store/billStore'
@@ -180,7 +191,7 @@ export default function AiAssistPage() {
                         className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full text-xs flex items-center justify-center active:scale-90 transition-transform"
                         aria-label={`Remove photo ${index + 1}`}
                       >
-                        &times;
+                        <X size={12} />
                       </button>
                     </div>
                   ))}
@@ -196,7 +207,11 @@ export default function AiAssistPage() {
                 onClick={handleTriggerCapture}
                 className="w-full py-3 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
               >
-                {photos.length === 0 ? 'Take Photo' : 'Add Another Photo'}
+                {photos.length === 0 ? (
+                  <><Camera size={18} className="inline -mt-0.5 mr-1.5" />Take Photo</>
+                ) : (
+                  <><ImagePlus size={18} className="inline -mt-0.5 mr-1.5" />Add Another Photo</>
+                )}
               </button>
 
               <button
@@ -204,7 +219,7 @@ export default function AiAssistPage() {
                 disabled={photos.length === 0 || processing}
                 className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
               >
-                {processing ? 'Processing…' : 'Process with AI'}
+                {processing ? 'Processing…' : <><Sparkles size={18} className="inline -mt-0.5 mr-1.5" />Process with AI</>}
               </button>
             </div>
 
@@ -248,7 +263,7 @@ export default function AiAssistPage() {
                 onClick={handleCopy}
                 className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-xl active:scale-95 transition-transform"
               >
-                {copied ? 'Copied!' : 'Copy Prompt to Clipboard'}
+                {copied ? 'Copied!' : <><Clipboard size={18} className="inline -mt-0.5 mr-1.5" />Copy Prompt to Clipboard</>}
               </button>
             </div>
 
@@ -272,6 +287,7 @@ export default function AiAssistPage() {
                 disabled={!response.trim()}
                 className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
               >
+                <Download size={18} className="inline -mt-0.5 mr-1.5" />
                 Import Items
               </button>
             </div>
@@ -282,7 +298,8 @@ export default function AiAssistPage() {
                 onClick={() => setShowKeySetup(true)}
                 className="text-sm text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
-                Have an API key? Skip the copy-paste
+                <KeyRound size={14} className="inline -mt-0.5 mr-1" />
+              Have an API key? Skip the copy-paste
               </button>
             )}
           </>
@@ -337,6 +354,7 @@ export default function AiAssistPage() {
                 disabled={!keyDraft.trim()}
                 className="flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40"
               >
+                <Save size={14} className="inline -mt-0.5 mr-1" />
                 Save
               </button>
               <button
@@ -357,6 +375,7 @@ export default function AiAssistPage() {
           onClick={() => navigate('/')}
           className="text-base text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
+          <ArrowLeft size={14} className="inline -mt-0.5 mr-1" />
           Back to Home
         </button>
       </div>

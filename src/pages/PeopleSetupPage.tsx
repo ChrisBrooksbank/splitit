@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { UserPlus, ArrowRight, X } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import PersonChip from '../components/assignment/PersonChip'
 import StepIndicator from '../components/layout/StepIndicator'
@@ -107,6 +108,7 @@ export default function PeopleSetupPage() {
             aria-label="Add person"
             className="px-5 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed min-w-[64px]"
           >
+            <UserPlus size={16} className="inline -mt-0.5 mr-1" />
             Add
           </button>
         </div>
@@ -158,14 +160,7 @@ export default function PeopleSetupPage() {
                   aria-label={`Remove ${person.name}`}
                   className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 active:scale-90 transition-all rounded-full focus:outline-none focus:ring-2 focus:ring-red-300"
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path
-                      d="M12 4L4 12M4 4l8 8"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  <X size={16} aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -195,7 +190,7 @@ export default function PeopleSetupPage() {
           aria-label="Continue to assignment"
           className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Continue to Assignment
+          Continue to Assignment <ArrowRight size={18} className="inline -mt-0.5 ml-1" />
         </button>
       </div>
     </div>

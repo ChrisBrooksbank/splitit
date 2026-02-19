@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
 import { useBillStore } from '../store/billStore'
 import { parseReceipt, mergeReceipts, type ParsedReceipt } from '../services/ocr/receiptParser'
 import LineItemList from '../components/bill/LineItemList'
@@ -107,7 +108,7 @@ export default function ItemEditorPage() {
             aria-label="Continue to people setup"
             className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Continue
+            Continue <ArrowRight size={18} className="inline -mt-0.5 ml-1" />
           </button>
         </div>
       </div>

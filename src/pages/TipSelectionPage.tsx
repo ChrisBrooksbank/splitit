@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Users, Percent, ArrowRight } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -110,6 +111,7 @@ export default function TipSelectionPage() {
             aria-pressed={tipMode === 'pass-around'}
             aria-label="Each person picks their own tip (pass around)"
           >
+            <Users size={14} className="inline -mt-0.5 mr-1" />
             Pass around
           </button>
           <button
@@ -123,6 +125,7 @@ export default function TipSelectionPage() {
             aria-pressed={tipMode === 'everyone'}
             aria-label="Set one tip percentage for everyone"
           >
+            <Percent size={14} className="inline -mt-0.5 mr-1" />
             Set for everyone
           </button>
         </div>
@@ -188,7 +191,7 @@ export default function TipSelectionPage() {
           className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
           aria-label="Calculate final split and go to summary"
         >
-          Calculate Final Split →
+          Calculate Final Split <ArrowRight size={18} className="inline -mt-0.5 ml-1" />
         </button>
       </div>
     </div>

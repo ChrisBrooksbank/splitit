@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, Trash2, Receipt } from 'lucide-react'
 import { useHistoryStore } from '../store/historyStore'
 import { formatCurrency } from '../utils/formatCurrency'
 import type { BillSession, Person, LineItem, PersonTotal } from '../types'
@@ -103,7 +104,8 @@ function SessionDetailView({ session, onBack }: SessionDetailProps) {
           className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1 active:opacity-70 min-h-[44px] -ml-1 px-1"
           aria-label="Back to history"
         >
-          ← Back
+          <ArrowLeft size={14} className="inline -mt-0.5 mr-1" />
+          Back
         </button>
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           {session.restaurantName ?? 'Bill Summary'}
@@ -162,7 +164,8 @@ export default function HistoryPage() {
           className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1 active:opacity-70 min-h-[44px] -ml-1 px-1"
           aria-label="Back to home"
         >
-          ← Back
+          <ArrowLeft size={14} className="inline -mt-0.5 mr-1" />
+          Back
         </button>
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           History
@@ -174,6 +177,7 @@ export default function HistoryPage() {
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {sessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center">
+            <Receipt size={32} className="text-gray-300 dark:text-gray-600 mb-3" />
             <p className="text-gray-400 dark:text-gray-500 text-base">No bills yet.</p>
             <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
               Your completed splits will appear here.
@@ -223,6 +227,7 @@ export default function HistoryPage() {
                         className="text-sm text-red-400 active:text-red-600 transition-colors"
                         aria-label={`Delete bill from ${dateStr}`}
                       >
+                        <Trash2 size={14} className="inline -mt-0.5 mr-1" />
                         Delete
                       </button>
                     </div>

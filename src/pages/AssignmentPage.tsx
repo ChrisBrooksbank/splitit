@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { CheckCircle2, Users } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -123,6 +124,7 @@ export default function AssignmentPage() {
           aria-label="Go to people setup"
           className="mt-4 px-6 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-xl text-sm font-medium min-h-[44px]"
         >
+          <Users size={16} className="inline -mt-0.5 mr-1" />
           Set up people
         </button>
       </div>
@@ -181,6 +183,7 @@ export default function AssignmentPage() {
               className="w-full py-4 px-6 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
               aria-label="Everyone's done, continue to tips"
             >
+              <CheckCircle2 size={18} className="inline -mt-0.5 mr-1.5" />
               Everyone's Done
             </button>
           </div>
@@ -289,6 +292,7 @@ export default function AssignmentPage() {
           className="w-full py-4 px-6 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform"
           aria-label="I'm done, pass phone to next person"
         >
+          <CheckCircle2 size={18} className="inline -mt-0.5 mr-1.5" />
           I'm Done
         </button>
       </div>
