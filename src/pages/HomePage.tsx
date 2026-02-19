@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import ImageCapture from '../components/camera/ImageCapture'
 import ImagePreview from '../components/camera/ImagePreview'
 import { useSessionRecovery } from '../hooks/useSessionRecovery'
+import { useApiKeyStore } from '../store/apiKeyStore'
 
 interface CapturedPhoto {
   file: File
@@ -16,6 +17,7 @@ export default function HomePage() {
   const [pendingPreview, setPendingPreview] = useState<CapturedPhoto | null>(null)
   const { hasIncompleteSession, recoveryRoute, lineItemCount, peopleCount, discardSession } =
     useSessionRecovery()
+  const hasApiKey = Boolean(useApiKeyStore((s) => s.apiKey))
 
   // Revoke blob URLs on unmount
   useEffect(() => {
@@ -196,7 +198,9 @@ export default function HomePage() {
           >
             Use AI Assistant
             <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
-              Most accurate · needs ChatGPT app
+              {hasApiKey
+                ? 'Most accurate · uses your API key'
+                : 'Most accurate · needs ChatGPT app'}
             </span>
           </button>
 
