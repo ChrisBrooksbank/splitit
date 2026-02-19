@@ -42,11 +42,9 @@ interface HistoryStore {
 
 export const useHistoryStore = create<HistoryStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       _sessions: [],
-      get sessions() {
-        return get()._sessions.map(fromSerialized)
-      },
+      sessions: [],
 
       saveSession: (session) =>
         set((state) => {
@@ -58,20 +56,31 @@ export const useHistoryStore = create<HistoryStore>()(
           } else {
             updated = [serialized, ...state._sessions]
           }
-          return { _sessions: updated.slice(0, MAX_HISTORY) }
+          const sliced = updated.slice(0, MAX_HISTORY)
+          return { _sessions: sliced, sessions: sliced.map(fromSerialized) }
         }),
 
       deleteSession: (id) =>
-        set((state) => ({
-          _sessions: state._sessions.filter((s) => s.id !== id),
-        })),
+        set((state) => {
+          const updated = state._sessions.filter((s) => s.id !== id)
+          return { _sessions: updated, sessions: updated.map(fromSerialized) }
+        }),
 
-      reset: () => set({ _sessions: [] }),
+      reset: () => set({ _sessions: [], sessions: [] }),
     }),
     {
       name: 'history-store',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ _sessions: state._sessions }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as { _sessions?: SerializedSession[] }
+        const _sessions = persisted?._sessions ?? []
+        return {
+          ...currentState,
+          _sessions,
+          sessions: _sessions.map(fromSerialized),
+        }
+      },
     }
   )
 )
