@@ -46,7 +46,7 @@ describe('PeopleSetupPage', () => {
 
   it('disables Continue button when fewer than 2 people', () => {
     renderPage()
-    expect(screen.getByRole('button', { name: /continue to assignment/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /continue with pass-around/i })).toBeDisabled()
   })
 
   it('disables Add button when input is empty', () => {
@@ -84,7 +84,7 @@ describe('PeopleSetupPage', () => {
     const input = screen.getByRole('textbox', { name: /person's name/i })
     await user.type(input, 'Alice{Enter}')
     await user.type(input, 'Bob{Enter}')
-    expect(screen.getByRole('button', { name: /continue to assignment/i })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /continue with pass-around/i })).not.toBeDisabled()
   })
 
   it('navigates to /assign when Continue is clicked', async () => {
@@ -93,7 +93,7 @@ describe('PeopleSetupPage', () => {
     const input = screen.getByRole('textbox', { name: /person's name/i })
     await user.type(input, 'Alice{Enter}')
     await user.type(input, 'Bob{Enter}')
-    await user.click(screen.getByRole('button', { name: /continue to assignment/i }))
+    await user.click(screen.getByRole('button', { name: /continue with pass-around/i }))
     expect(mockNavigate).toHaveBeenCalledWith('/assign')
   })
 

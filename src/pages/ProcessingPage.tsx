@@ -94,9 +94,7 @@ export default function ProcessingPage() {
 
       // Save photo thumbnails for history (from collected File objects)
       try {
-        const thumbs = await Promise.all(
-          originalFiles.map((file) => createThumbnailDataUrl(file))
-        )
+        const thumbs = await Promise.all(originalFiles.map((file) => createThumbnailDataUrl(file)))
         storeReceiptPhotos(thumbs)
       } catch {
         // Non-critical — history just won't have photos

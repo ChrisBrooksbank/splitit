@@ -16,6 +16,8 @@ const TipSelectionPage = lazy(() => import('./pages/TipSelectionPage'))
 const SummaryPage = lazy(() => import('./pages/SummaryPage'))
 const HistoryPage = lazy(() => import('./pages/HistoryPage'))
 const AiAssistPage = lazy(() => import('./pages/AiAssistPage'))
+const LiveSessionPage = lazy(() => import('./pages/LiveSessionPage'))
+const JoinPage = lazy(() => import('./pages/JoinPage'))
 
 function PageLoader() {
   return (
@@ -42,6 +44,8 @@ function AnimatedRoutes() {
         <Route path="/summary" element={<SummaryPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/ai-assist" element={<AiAssistPage />} />
+        <Route path="/live-session" element={<LiveSessionPage />} />
+        <Route path="/join/:roomCode" element={<JoinPage />} />
       </Routes>
     </div>
   )

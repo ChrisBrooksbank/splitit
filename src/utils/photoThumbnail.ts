@@ -5,12 +5,9 @@ const JPEG_QUALITY = 0.6
  * Resize a photo to a small thumbnail and return a base64 data URL.
  * Works with File objects, blob URLs, or existing data URLs.
  */
-export async function createThumbnailDataUrl(
-  source: File | string
-): Promise<string> {
+export async function createThumbnailDataUrl(source: File | string): Promise<string> {
   const img = new Image()
-  const objectUrl =
-    source instanceof File ? URL.createObjectURL(source) : source
+  const objectUrl = source instanceof File ? URL.createObjectURL(source) : source
 
   await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve()
@@ -51,6 +48,7 @@ export function storeReceiptPhotos(dataUrls: string[]): void {
 export function consumeReceiptPhotos(): string[] | null {
   const raw = sessionStorage.getItem(RECEIPT_PHOTOS_KEY)
   if (!raw) return null
+  sessionStorage.removeItem(RECEIPT_PHOTOS_KEY)
   try {
     return JSON.parse(raw) as string[]
   } catch {

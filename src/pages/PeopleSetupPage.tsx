@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UserPlus, ArrowRight, X } from 'lucide-react'
+import { UserPlus, ArrowRight, X, Wifi } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import PersonChip from '../components/assignment/PersonChip'
 import StepIndicator from '../components/layout/StepIndicator'
@@ -182,15 +182,24 @@ export default function PeopleSetupPage() {
         )}
       </div>
 
-      {/* Sticky continue button */}
-      <div className="px-4 pb-8 pt-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
+      {/* Sticky continue buttons */}
+      <div className="px-4 pb-8 pt-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 space-y-3">
+        <button
+          onClick={() => navigate('/live-session')}
+          disabled={!canContinue}
+          aria-label="Start live session with own phones"
+          className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Wifi size={18} className="inline -mt-0.5 mr-1" />
+          Live Session (Own Phones)
+        </button>
         <button
           onClick={handleContinue}
           disabled={!canContinue}
-          aria-label="Continue to assignment"
-          className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-2xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
+          aria-label="Continue with pass-around assignment"
+          className="w-full py-4 px-6 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-2xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Continue to Assignment <ArrowRight size={18} className="inline -mt-0.5 ml-1" />
+          Pass Around (One Phone) <ArrowRight size={18} className="inline -mt-0.5 ml-1" />
         </button>
       </div>
     </div>

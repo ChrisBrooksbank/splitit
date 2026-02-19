@@ -4,9 +4,11 @@ import { CheckCircle2, Users } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
+import { useLiveSessionStore } from '../store/liveSessionStore'
 import AssignableItem from '../components/assignment/AssignableItem'
 import HandoffScreen from '../components/assignment/HandoffScreen'
 import SharedItemSplitter from '../components/assignment/SharedItemSplitter'
+import HostLiveAssignmentView from '../components/liveSession/HostLiveAssignmentView'
 import StepIndicator from '../components/layout/StepIndicator'
 import type { LineItem, Person } from '../types'
 
@@ -18,6 +20,7 @@ export default function AssignmentPage() {
   const { lineItems } = useBillStore()
   const { assignments, portions, toggleAssignment, setAssignees, setPortions, clearPortions } =
     useAssignmentStore()
+  const { isLive, role, advancePhaseFn } = useLiveSessionStore()
 
   // Flexible order: track who has finished their turn, and who is currently claiming
   const [claimedPersonIds, setClaimedPersonIds] = useState<string[]>([])
@@ -113,6 +116,18 @@ export default function AssignmentPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  // Live session host view
+  if (isLive && role === 'host') {
+    return (
+      <HostLiveAssignmentView
+        onAdvanceToTips={() => {
+          advancePhaseFn?.('tips')
+          navigate('/tips')
+        }}
+      />
+    )
+  }
+
   if (people.length < 2) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center px-6 text-center">
@@ -198,7 +213,7 @@ export default function AssignmentPage() {
                 key={p.id}
                 className="h-1.5 rounded-full transition-all"
                 style={{
-                  width: isClaimed ? 8 : 8,
+                  width: 8,
                   backgroundColor: isClaimed ? '#9CA3AF' : '#E5E7EB',
                 }}
                 aria-hidden="true"

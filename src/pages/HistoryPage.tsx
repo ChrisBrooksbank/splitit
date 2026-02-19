@@ -20,7 +20,10 @@ interface ConfirmDialogProps {
 
 function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onCancel}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onCancel}
+    >
       <div
         className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl mx-6 max-w-sm w-full p-6"
         onClick={(e) => e.stopPropagation()}

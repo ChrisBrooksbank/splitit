@@ -117,9 +117,7 @@ export default function AiAssistPage() {
       )
       const items = parseAiResponse(rawResponse)
       // Save photo thumbnails for history
-      const thumbs = await Promise.all(
-        photos.map((p) => createThumbnailDataUrl(p.file))
-      )
+      const thumbs = await Promise.all(photos.map((p) => createThumbnailDataUrl(p.file)))
       storeReceiptPhotos(thumbs)
       setLineItems(items)
       navigate('/editor')

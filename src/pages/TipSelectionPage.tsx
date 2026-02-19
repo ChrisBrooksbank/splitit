@@ -5,6 +5,7 @@ import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
 import { useTipStore } from '../store/tipStore'
+import { useLiveSessionStore } from '../store/liveSessionStore'
 import PersonTipCard from '../components/tip/PersonTipCard'
 import StepIndicator from '../components/layout/StepIndicator'
 
@@ -56,7 +57,12 @@ export default function TipSelectionPage() {
     }
   }, [people, initializeTips])
 
+  const { isLive, role, advancePhaseFn } = useLiveSessionStore()
+
   function handleCalculate() {
+    if (isLive && role === 'host') {
+      advancePhaseFn?.('summary')
+    }
     navigate('/summary')
   }
 
