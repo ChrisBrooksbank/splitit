@@ -16,6 +16,7 @@ import { processReceiptWithAi } from '../services/aiImport/directAiService'
 import { useBillStore } from '../store/billStore'
 import { useApiKeyStore, type AiProvider } from '../store/apiKeyStore'
 import ImageCapture from '../components/camera/ImageCapture'
+import { createThumbnailDataUrl, storeReceiptPhotos } from '../utils/photoThumbnail'
 
 const PROMPT = `Read these restaurant bill/receipt photos and extract every line item. If there are multiple photos, they are parts of the same bill — combine them into one list and remove any duplicates from overlapping sections. Return ONLY a JSON object in this exact format, no other text:
 
@@ -115,6 +116,11 @@ export default function AiAssistPage() {
         apiKey
       )
       const items = parseAiResponse(rawResponse)
+      // Save photo thumbnails for history
+      const thumbs = await Promise.all(
+        photos.map((p) => createThumbnailDataUrl(p.file))
+      )
+      storeReceiptPhotos(thumbs)
       setLineItems(items)
       navigate('/editor')
     } catch (err) {

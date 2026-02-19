@@ -40,4 +40,5 @@ export interface BillSession {
   assignments: Map<string, string[]>
   tipConfig: TipConfig
   totals: PersonTotal[] // calculated summary
+  photoDataUrls?: string[] // receipt photo thumbnails (base64 data URLs)
 }
