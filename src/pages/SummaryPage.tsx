@@ -9,6 +9,7 @@ import { useTipStore } from '../store/tipStore'
 import { useHistoryStore } from '../store/historyStore'
 import { calculateSplit } from '../services/calculator/splitCalculator'
 import { formatCurrency } from '../utils/formatCurrency'
+import { consumeReceiptPhotos } from '../utils/photoThumbnail'
 import StepIndicator from '../components/layout/StepIndicator'
 import type { Person, LineItem, PersonTotal } from '../types'
 
@@ -176,6 +177,7 @@ export default function SummaryPage() {
     const sessionId = draftId ?? nanoid()
     sessionStorage.removeItem('draftSessionId')
 
+    const photos = consumeReceiptPhotos()
     const session = {
       id: sessionId,
       date: new Date().toISOString(),
@@ -189,6 +191,7 @@ export default function SummaryPage() {
         fixedAmount: 0,
       },
       totals: splitResult.personTotals,
+      ...(photos ? { photoDataUrls: photos } : {}),
     }
     saveSession(session)
   }, [people, lineItems, assignments, splitResult.personTotals, saveSession])

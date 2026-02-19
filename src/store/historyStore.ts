@@ -16,6 +16,7 @@ interface SerializedSession {
   assignments: Record<string, string[]>
   tipConfig: TipConfig
   totals: PersonTotal[]
+  photoDataUrls?: string[]
 }
 
 function toSerialized(session: BillSession): SerializedSession {

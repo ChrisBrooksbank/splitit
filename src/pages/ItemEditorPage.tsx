@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react'
 import { useBillStore } from '../store/billStore'
 import { useHistoryStore } from '../store/historyStore'
 import { parseReceipt, mergeReceipts, type ParsedReceipt } from '../services/ocr/receiptParser'
+import { peekReceiptPhotos } from '../utils/photoThumbnail'
 import LineItemList from '../components/bill/LineItemList'
 import BillSummaryCard from '../components/bill/BillSummaryCard'
 import StepIndicator from '../components/layout/StepIndicator'
@@ -60,6 +61,7 @@ export default function ItemEditorPage() {
   useEffect(() => {
     if (lineItems.length === 0) return
     sessionStorage.setItem('draftSessionId', sessionIdRef.current)
+    const photos = peekReceiptPhotos()
     saveSession({
       id: sessionIdRef.current,
       date: new Date().toISOString(),
@@ -69,6 +71,7 @@ export default function ItemEditorPage() {
       assignments: new Map(),
       tipConfig: { mode: 'percentage', percentage: 12.5, fixedAmount: 0 },
       totals: [],
+      ...(photos ? { photoDataUrls: photos } : {}),
     })
   }, [lineItems, saveSession])
 

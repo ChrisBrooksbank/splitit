@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { preprocessImage } from '../services/ocr/imagePreprocessor'
 import { recognize } from '../services/ocr/tesseractService'
+import { createThumbnailDataUrl, storeReceiptPhotos } from '../utils/photoThumbnail'
 
 export default function ProcessingPage() {
   const navigate = useNavigate()
@@ -32,6 +33,7 @@ export default function ProcessingPage() {
     async function processPhotos() {
       const totalPhotos = urls.length
       const texts: string[] = []
+      const originalFiles: File[] = []
 
       for (let i = 0; i < totalPhotos; i++) {
         const photoLabel =
@@ -45,6 +47,7 @@ export default function ProcessingPage() {
           const response = await fetch(urls[i])
           const blob = await response.blob()
           const file = new File([blob], `receipt-${i}.jpg`, { type: blob.type || 'image/jpeg' })
+          originalFiles.push(file)
 
           // Preprocess
           if (!photoLabel) setLabel('Preparing image…')
@@ -87,6 +90,16 @@ export default function ProcessingPage() {
           sessionStorage.removeItem('ocrResult')
         }
         sessionStorage.removeItem('capturedImageUrl')
+      }
+
+      // Save photo thumbnails for history (from collected File objects)
+      try {
+        const thumbs = await Promise.all(
+          originalFiles.map((file) => createThumbnailDataUrl(file))
+        )
+        storeReceiptPhotos(thumbs)
+      } catch {
+        // Non-critical — history just won't have photos
       }
 
       setProgress(1)

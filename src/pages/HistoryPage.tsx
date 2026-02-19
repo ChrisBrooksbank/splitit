@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trash2, Receipt, FileEdit } from 'lucide-react'
+import { ArrowLeft, Trash2, Receipt, FileEdit, ImageIcon } from 'lucide-react'
 import { useHistoryStore } from '../store/historyStore'
 import { useBillStore } from '../store/billStore'
 import { formatCurrency } from '../utils/formatCurrency'
@@ -112,6 +112,20 @@ function SessionDetailView({ session, onBack }: SessionDetailProps) {
           {session.restaurantName ?? 'Bill Summary'}
         </h1>
         <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">{dateStr}</p>
+
+        {/* Receipt photos */}
+        {session.photoDataUrls && session.photoDataUrls.length > 0 && (
+          <div className="mt-3 flex gap-2 overflow-x-auto py-1">
+            {session.photoDataUrls.map((url, i) => (
+              <img
+                key={i}
+                src={url}
+                alt={`Receipt photo ${i + 1}`}
+                className="w-16 h-20 object-cover rounded-lg border border-gray-200 dark:border-gray-600 flex-shrink-0"
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -219,6 +233,18 @@ export default function HistoryPage() {
                       }
                     >
                       <div className="flex justify-between items-start">
+                        {/* Receipt thumbnail */}
+                        {session.photoDataUrls && session.photoDataUrls.length > 0 ? (
+                          <img
+                            src={session.photoDataUrls[0]}
+                            alt="Receipt"
+                            className="w-12 h-14 object-cover rounded-lg border border-gray-200 dark:border-gray-600 flex-shrink-0 mr-3"
+                          />
+                        ) : (
+                          <div className="w-12 h-14 rounded-lg border border-gray-200 dark:border-gray-600 flex-shrink-0 mr-3 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+                            <ImageIcon size={16} className="text-gray-300 dark:text-gray-600" />
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-gray-900 dark:text-gray-100 break-words">
