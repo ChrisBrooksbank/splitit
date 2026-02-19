@@ -9,6 +9,7 @@ const MAX_HISTORY = 10
 interface SerializedSession {
   id: string
   date: string
+  status?: 'draft' | 'complete'
   restaurantName?: string
   people: Person[]
   lineItems: LineItem[]

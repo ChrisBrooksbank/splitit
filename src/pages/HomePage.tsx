@@ -213,7 +213,7 @@ export default function HomePage() {
           >
             <Sparkles size={18} className="inline -mt-0.5 mr-1.5" />
             Use AI Assistant
-            <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
+            <span className="block text-xs text-gray-600 dark:text-gray-400 mt-1 text-center font-normal">
               {hasApiKey
                 ? 'Most accurate · uses your API key'
                 : 'Most accurate · needs ChatGPT app'}
@@ -226,7 +226,7 @@ export default function HomePage() {
           >
             <Camera size={18} className="inline -mt-0.5 mr-1.5" />
             Scan a Bill
-            <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
+            <span className="block text-xs text-gray-600 dark:text-gray-400 mt-1 text-center font-normal">
               Quick · works offline · less accurate
             </span>
           </button>
@@ -240,7 +240,7 @@ export default function HomePage() {
           >
             <PenLine size={18} className="inline -mt-0.5 mr-1.5" />
             Enter Manually
-            <span className="block text-xs text-gray-400 dark:text-gray-500 mt-1 text-center font-normal">
+            <span className="block text-xs text-gray-600 dark:text-gray-400 mt-1 text-center font-normal">
               Always works · type items yourself
             </span>
           </button>
@@ -249,13 +249,13 @@ export default function HomePage() {
         {/* History link */}
         <button
           onClick={() => navigate('/history')}
-          className="text-sm text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          className="text-sm text-gray-600 dark:text-gray-400 underline-offset-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
         >
           <Clock size={14} className="inline -mt-0.5 mr-1" />
           View History
         </button>
 
-        <span className="text-xs text-gray-300 dark:text-gray-600">v{__APP_VERSION__}</span>
+        <span className="text-xs text-gray-500 dark:text-gray-500">v{__APP_VERSION__}</span>
       </div>
     </div>
   )

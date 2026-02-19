@@ -30,8 +30,8 @@ export default function BillSummaryCard({
 
       {detectedTotalCents != null && (
         <div className="flex items-center justify-between mt-1">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Bill total</span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="text-sm text-gray-600 dark:text-gray-300">Bill total</span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">
             {formatCurrency(detectedTotalCents)}
           </span>
         </div>

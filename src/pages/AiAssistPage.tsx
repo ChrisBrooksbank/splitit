@@ -70,9 +70,7 @@ export default function AiAssistPage() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      setError(
-        'Could not copy automatically. Please select and copy the prompt text above.'
-      )
+      setError('Could not copy automatically. Please select and copy the prompt text above.')
     }
   }
 
@@ -198,19 +196,22 @@ export default function AiAssistPage() {
                 </div>
               )}
 
-              <ImageCapture
-                onCapture={handlePhotoCapture}
-                triggerCapture={triggerCapture}
-              />
+              <ImageCapture onCapture={handlePhotoCapture} triggerCapture={triggerCapture} />
 
               <button
                 onClick={handleTriggerCapture}
                 className="w-full py-3 px-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base font-medium rounded-xl border border-gray-200 dark:border-gray-600 active:scale-95 transition-transform"
               >
                 {photos.length === 0 ? (
-                  <><Camera size={18} className="inline -mt-0.5 mr-1.5" />Take Photo</>
+                  <>
+                    <Camera size={18} className="inline -mt-0.5 mr-1.5" />
+                    Take Photo
+                  </>
                 ) : (
-                  <><ImagePlus size={18} className="inline -mt-0.5 mr-1.5" />Add Another Photo</>
+                  <>
+                    <ImagePlus size={18} className="inline -mt-0.5 mr-1.5" />
+                    Add Another Photo
+                  </>
                 )}
               </button>
 
@@ -219,18 +220,29 @@ export default function AiAssistPage() {
                 disabled={photos.length === 0 || processing}
                 className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
               >
-                {processing ? 'Processing…' : <><Sparkles size={18} className="inline -mt-0.5 mr-1.5" />Process with AI</>}
+                {processing ? (
+                  'Processing…'
+                ) : (
+                  <>
+                    <Sparkles size={18} className="inline -mt-0.5 mr-1.5" />
+                    Process with AI
+                  </>
+                )}
               </button>
             </div>
 
-            {error && (
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
             {/* Key info & actions */}
             <div className="flex flex-col gap-2 items-center">
               <p className="text-xs text-gray-400 dark:text-gray-500">
-                Using {provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Anthropic' : 'Gemini'} ·{' '}
+                Using{' '}
+                {provider === 'openai'
+                  ? 'OpenAI'
+                  : provider === 'anthropic'
+                    ? 'Anthropic'
+                    : 'Gemini'}{' '}
+                ·{' '}
                 <button
                   onClick={handleRemoveKey}
                   className="underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -245,8 +257,7 @@ export default function AiAssistPage() {
           <>
             <div className="flex flex-col gap-3">
               <p className="text-sm text-gray-400 dark:text-gray-500">
-                You'll need ChatGPT or a similar AI chatbot open in another app
-                or browser tab.
+                You'll need ChatGPT or a similar AI chatbot open in another app or browser tab.
               </p>
             </div>
 
@@ -256,14 +267,21 @@ export default function AiAssistPage() {
                 Step 1: Copy the prompt
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Open ChatGPT or Claude, attach your bill photo(s), and paste the
-                prompt. Multiple photos of the same bill are fine.
+                Open ChatGPT or Claude, attach your bill photo(s), and paste the prompt. Multiple
+                photos of the same bill are fine.
               </p>
               <button
                 onClick={handleCopy}
                 className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-xl active:scale-95 transition-transform"
               >
-                {copied ? 'Copied!' : <><Clipboard size={18} className="inline -mt-0.5 mr-1.5" />Copy Prompt to Clipboard</>}
+                {copied ? (
+                  'Copied!'
+                ) : (
+                  <>
+                    <Clipboard size={18} className="inline -mt-0.5 mr-1.5" />
+                    Copy Prompt to Clipboard
+                  </>
+                )}
               </button>
             </div>
 
@@ -279,9 +297,7 @@ export default function AiAssistPage() {
                 rows={6}
                 className="w-full text-base text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
               />
-              {error && (
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-              )}
+              {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
               <button
                 onClick={handleImport}
                 disabled={!response.trim()}
@@ -299,7 +315,7 @@ export default function AiAssistPage() {
                 className="text-sm text-gray-400 dark:text-gray-500 underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <KeyRound size={14} className="inline -mt-0.5 mr-1" />
-              Have an API key? Skip the copy-paste
+                Have an API key? Skip the copy-paste
               </button>
             )}
           </>
@@ -308,12 +324,10 @@ export default function AiAssistPage() {
         {/* Inline API key setup */}
         {showKeySetup && !hasKey && (
           <div className="flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Set up API key
-            </h3>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Set up API key</h3>
             <p className="text-xs text-gray-400 dark:text-gray-500">
-              Your key is stored locally on this device and sent directly to the
-              provider. It never touches our servers.
+              Your key is stored locally on this device and sent directly to the provider. It never
+              touches our servers.
             </p>
 
             {/* Provider selector */}

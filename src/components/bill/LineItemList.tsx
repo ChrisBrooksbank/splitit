@@ -13,7 +13,7 @@ export default function LineItemList({ items, onUpdate, onDelete, onAdd }: LineI
   return (
     <div className="flex flex-col gap-1">
       {items.length === 0 && (
-        <p className="py-6 text-center text-sm text-gray-400 dark:text-gray-500">
+        <p className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
           No items yet. Add items manually or scan a receipt.
         </p>
       )}

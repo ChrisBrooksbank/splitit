@@ -36,10 +36,7 @@ export async function processReceiptWithAi(
   return callAnthropic(base64Images, apiKey)
 }
 
-async function callOpenAi(
-  base64Images: string[],
-  apiKey: string
-): Promise<string> {
+async function callOpenAi(base64Images: string[], apiKey: string): Promise<string> {
   const imageContent = base64Images.map((dataUrl) => ({
     type: 'image_url' as const,
     image_url: { url: dataUrl },
@@ -77,10 +74,7 @@ async function callOpenAi(
   return data.choices[0].message.content
 }
 
-async function callAnthropic(
-  base64Images: string[],
-  apiKey: string
-): Promise<string> {
+async function callAnthropic(base64Images: string[], apiKey: string): Promise<string> {
   const imageContent = base64Images.map((dataUrl) => {
     const [meta, data] = dataUrl.split(',')
     const mediaType = meta.match(/data:(.*?);/)?.[1] ?? 'image/jpeg'
@@ -128,10 +122,7 @@ async function callAnthropic(
   return data.content[0].text
 }
 
-async function callGemini(
-  base64Images: string[],
-  apiKey: string
-): Promise<string> {
+async function callGemini(base64Images: string[], apiKey: string): Promise<string> {
   const imageParts = base64Images.map((dataUrl) => {
     const [meta, data] = dataUrl.split(',')
     const mimeType = meta.match(/data:(.*?);/)?.[1] ?? 'image/jpeg'

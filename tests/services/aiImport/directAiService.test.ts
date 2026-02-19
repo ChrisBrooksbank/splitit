@@ -34,9 +34,7 @@ describe('processReceiptWithAi', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          choices: [
-            { message: { content: '{"items":[{"name":"Beer","price":5.00,"qty":1}]}' } },
-          ],
+          choices: [{ message: { content: '{"items":[{"name":"Beer","price":5.00,"qty":1}]}' } }],
         }),
       })
 
@@ -82,9 +80,9 @@ describe('processReceiptWithAi', () => {
         json: async () => ({ error: { message: 'Invalid API key' } }),
       })
 
-      await expect(
-        processReceiptWithAi([makeFile()], 'openai', 'bad-key')
-      ).rejects.toThrow('Invalid API key')
+      await expect(processReceiptWithAi([makeFile()], 'openai', 'bad-key')).rejects.toThrow(
+        'Invalid API key'
+      )
     })
 
     it('throws generic error when response body cannot be parsed', async () => {
@@ -96,9 +94,9 @@ describe('processReceiptWithAi', () => {
         },
       })
 
-      await expect(
-        processReceiptWithAi([makeFile()], 'openai', 'sk-key')
-      ).rejects.toThrow('OpenAI API error (500)')
+      await expect(processReceiptWithAi([makeFile()], 'openai', 'sk-key')).rejects.toThrow(
+        'OpenAI API error (500)'
+      )
     })
   })
 
@@ -111,11 +109,7 @@ describe('processReceiptWithAi', () => {
         }),
       })
 
-      const result = await processReceiptWithAi(
-        [makeFile()],
-        'anthropic',
-        'sk-ant-test-key'
-      )
+      const result = await processReceiptWithAi([makeFile()], 'anthropic', 'sk-ant-test-key')
 
       expect(mockFetch).toHaveBeenCalledOnce()
       const [url, options] = mockFetch.mock.calls[0]
@@ -141,9 +135,9 @@ describe('processReceiptWithAi', () => {
         json: async () => ({ error: { message: 'Forbidden' } }),
       })
 
-      await expect(
-        processReceiptWithAi([makeFile()], 'anthropic', 'bad-key')
-      ).rejects.toThrow('Forbidden')
+      await expect(processReceiptWithAi([makeFile()], 'anthropic', 'bad-key')).rejects.toThrow(
+        'Forbidden'
+      )
     })
   })
 
@@ -153,16 +147,14 @@ describe('processReceiptWithAi', () => {
         ok: true,
         json: async () => ({
           candidates: [
-            { content: { parts: [{ text: '{"items":[{"name":"Pizza","price":12.00,"qty":1}]}' }] } },
+            {
+              content: { parts: [{ text: '{"items":[{"name":"Pizza","price":12.00,"qty":1}]}' }] },
+            },
           ],
         }),
       })
 
-      const result = await processReceiptWithAi(
-        [makeFile()],
-        'gemini',
-        'AIzaTestKey123'
-      )
+      const result = await processReceiptWithAi([makeFile()], 'gemini', 'AIzaTestKey123')
 
       expect(mockFetch).toHaveBeenCalledOnce()
       const [url, options] = mockFetch.mock.calls[0]
@@ -186,9 +178,9 @@ describe('processReceiptWithAi', () => {
         json: async () => ({ error: { message: 'API key not valid' } }),
       })
 
-      await expect(
-        processReceiptWithAi([makeFile()], 'gemini', 'bad-key')
-      ).rejects.toThrow('API key not valid')
+      await expect(processReceiptWithAi([makeFile()], 'gemini', 'bad-key')).rejects.toThrow(
+        'API key not valid'
+      )
     })
   })
 })

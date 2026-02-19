@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trash2, Receipt } from 'lucide-react'
+import { ArrowLeft, Trash2, Receipt, FileEdit } from 'lucide-react'
 import { useHistoryStore } from '../store/historyStore'
+import { useBillStore } from '../store/billStore'
 import { formatCurrency } from '../utils/formatCurrency'
 import type { BillSession, Person, LineItem, PersonTotal } from '../types'
 
@@ -54,7 +55,7 @@ function ReadOnlyPersonCard({ person, personTotal, session }: ReadOnlyPersonCard
                 : item.name
             return (
               <div key={item.id} className="flex justify-between items-baseline">
-                <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 mr-2 truncate">
+                <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 mr-2 break-words">
                   {label}
                 </span>
                 <span className="text-sm text-gray-700 dark:text-gray-300 tabular-nums flex-shrink-0">
@@ -66,11 +67,11 @@ function ReadOnlyPersonCard({ person, personTotal, session }: ReadOnlyPersonCard
         )}
       </div>
       <div className="px-4 pb-4 pt-1 border-t border-gray-50 dark:border-gray-700 space-y-1">
-        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
           <span>Subtotal</span>
           <span className="tabular-nums">{formatCurrency(subtotal)}</span>
         </div>
-        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
           <span>Tip ({tipPercentage}%)</span>
           <span className="tabular-nums">{formatCurrency(tipAmount)}</span>
         </div>
@@ -101,7 +102,7 @@ function SessionDetailView({ session, onBack }: SessionDetailProps) {
       <div className="bg-white dark:bg-gray-900 px-4 pt-12 pb-4 border-b border-gray-100 dark:border-gray-700">
         <button
           onClick={onBack}
-          className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1 active:opacity-70 min-h-[44px] -ml-1 px-1"
+          className="text-sm text-gray-600 dark:text-gray-300 mb-3 flex items-center gap-1 active:opacity-70 min-h-[44px] -ml-1 px-1"
           aria-label="Back to history"
         >
           <ArrowLeft size={14} className="inline -mt-0.5 mr-1" />
@@ -110,7 +111,7 @@ function SessionDetailView({ session, onBack }: SessionDetailProps) {
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           {session.restaurantName ?? 'Bill Summary'}
         </h1>
-        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{dateStr}</p>
+        <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">{dateStr}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -149,7 +150,14 @@ function SessionDetailView({ session, onBack }: SessionDetailProps) {
 export default function HistoryPage() {
   const navigate = useNavigate()
   const { sessions, deleteSession } = useHistoryStore()
+  const { setLineItems } = useBillStore()
   const [selectedSession, setSelectedSession] = useState<BillSession | null>(null)
+
+  function handleResumeDraft(session: BillSession) {
+    setLineItems(session.lineItems)
+    sessionStorage.setItem('draftSessionId', session.id)
+    navigate('/editor')
+  }
 
   if (selectedSession) {
     return <SessionDetailView session={selectedSession} onBack={() => setSelectedSession(null)} />
@@ -161,7 +169,7 @@ export default function HistoryPage() {
       <div className="bg-white dark:bg-gray-900 px-4 pt-12 pb-4 border-b border-gray-100 dark:border-gray-700">
         <button
           onClick={() => navigate('/')}
-          className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1 active:opacity-70 min-h-[44px] -ml-1 px-1"
+          className="text-sm text-gray-600 dark:text-gray-300 mb-3 flex items-center gap-1 active:opacity-70 min-h-[44px] -ml-1 px-1"
           aria-label="Back to home"
         >
           <ArrowLeft size={14} className="inline -mt-0.5 mr-1" />
@@ -170,7 +178,7 @@ export default function HistoryPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           History
         </h1>
-        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Your past bills</p>
+        <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">Your past bills</p>
       </div>
 
       {/* Session list */}
@@ -178,15 +186,18 @@ export default function HistoryPage() {
         {sessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center">
             <Receipt size={32} className="text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-400 dark:text-gray-500 text-base">No bills yet.</p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
+            <p className="text-gray-500 dark:text-gray-400 text-base">No bills yet.</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
               Your completed splits will appear here.
             </p>
           </div>
         ) : (
           <ul className="space-y-3" aria-label="Bill history">
             {sessions.map((session) => {
-              const grandTotal = session.totals.reduce((sum, t) => sum + t.total, 0)
+              const isDraft = session.status === 'draft'
+              const grandTotal = isDraft
+                ? session.lineItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+                : session.totals.reduce((sum, t) => sum + t.total, 0)
               const dateStr = new Date(session.date).toLocaleDateString('en-GB', {
                 month: 'short',
                 day: 'numeric',
@@ -197,21 +208,35 @@ export default function HistoryPage() {
                 <li key={session.id}>
                   <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
                     <button
-                      onClick={() => setSelectedSession(session)}
+                      onClick={() =>
+                        isDraft ? handleResumeDraft(session) : setSelectedSession(session)
+                      }
                       className="w-full px-4 py-4 text-left active:bg-gray-50 dark:active:bg-gray-800 transition-colors"
-                      aria-label={`View ${session.restaurantName ?? 'bill'} from ${dateStr}`}
+                      aria-label={
+                        isDraft
+                          ? `Resume draft bill from ${dateStr}`
+                          : `View ${session.restaurantName ?? 'bill'} from ${dateStr}`
+                      }
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                            {session.restaurantName ?? 'Bill'}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 break-words">
+                              {session.restaurantName ?? 'Bill'}
+                            </p>
+                            {isDraft && (
+                              <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                                Draft
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
                             {dateStr}
                           </p>
-                          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
-                            {session.people.length}{' '}
-                            {session.people.length === 1 ? 'person' : 'people'}
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                            {isDraft
+                              ? `${session.lineItems.length} item${session.lineItems.length !== 1 ? 's' : ''}`
+                              : `${session.people.length} ${session.people.length === 1 ? 'person' : 'people'}`}
                           </p>
                         </div>
                         <span className="font-bold text-gray-900 dark:text-gray-100 text-lg ml-4 tabular-nums flex-shrink-0">
@@ -220,8 +245,18 @@ export default function HistoryPage() {
                       </div>
                     </button>
 
-                    {/* Delete button */}
-                    <div className="border-t border-gray-50 dark:border-gray-700 px-4 py-2">
+                    {/* Action buttons */}
+                    <div className="border-t border-gray-50 dark:border-gray-700 px-4 py-2 flex items-center gap-4">
+                      {isDraft && (
+                        <button
+                          onClick={() => handleResumeDraft(session)}
+                          className="text-sm text-indigo-500 active:text-indigo-700 transition-colors"
+                          aria-label={`Resume draft bill from ${dateStr}`}
+                        >
+                          <FileEdit size={14} className="inline -mt-0.5 mr-1" />
+                          Resume
+                        </button>
+                      )}
                       <button
                         onClick={() => deleteSession(session.id)}
                         className="text-sm text-red-400 active:text-red-600 transition-colors"

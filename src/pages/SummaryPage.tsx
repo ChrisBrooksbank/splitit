@@ -72,11 +72,11 @@ function PersonSummaryCard({ person, personTotal, items }: PersonSummaryCardProp
 
       {/* Subtotals */}
       <div className="px-4 pb-4 pt-1 border-t border-gray-50 dark:border-gray-700 space-y-1">
-        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
           <span>Subtotal</span>
           <span className="tabular-nums">{formatCurrency(subtotal)}</span>
         </div>
-        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
           <span>Tip ({tipPercentage}%)</span>
           <span className="tabular-nums">{formatCurrency(tipAmount)}</span>
         </div>
@@ -172,9 +172,14 @@ export default function SummaryPage() {
     if (people.length === 0) return
     savedRef.current = true
 
+    const draftId = sessionStorage.getItem('draftSessionId')
+    const sessionId = draftId ?? nanoid()
+    sessionStorage.removeItem('draftSessionId')
+
     const session = {
-      id: nanoid(),
+      id: sessionId,
       date: new Date().toISOString(),
+      status: 'complete' as const,
       people,
       lineItems,
       assignments: new Map(Object.entries(assignments)),
@@ -236,7 +241,7 @@ export default function SummaryPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           Summary
         </h1>
-        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
           Here's what everyone owes.
         </p>
       </div>
@@ -261,11 +266,11 @@ export default function SummaryPage() {
           className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-4"
           aria-label="Grand total"
         >
-          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1">
             <span>Bill subtotal</span>
             <span className="tabular-nums">{formatCurrency(billSubtotal)}</span>
           </div>
-          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
+          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-3">
             <span>Total tips</span>
             <span className="tabular-nums">{formatCurrency(totalTip)}</span>
           </div>

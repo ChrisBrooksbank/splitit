@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { nanoid } from 'nanoid'
 import { ArrowRight } from 'lucide-react'
 import { useBillStore } from '../store/billStore'
+import { useHistoryStore } from '../store/historyStore'
 import { parseReceipt, mergeReceipts, type ParsedReceipt } from '../services/ocr/receiptParser'
 import LineItemList from '../components/bill/LineItemList'
 import BillSummaryCard from '../components/bill/BillSummaryCard'
@@ -29,7 +31,9 @@ function consumeOcrData(): ParsedReceipt | null {
 export default function ItemEditorPage() {
   const navigate = useNavigate()
   const { lineItems, setLineItems, addLineItem, updateLineItem, deleteLineItem } = useBillStore()
+  const { saveSession } = useHistoryStore()
   const didInit = useRef(false)
+  const sessionIdRef = useRef(sessionStorage.getItem('draftSessionId') ?? nanoid())
 
   // Lazy-initialize OCR-derived state (runs once, during first render)
   const [ocrInit] = useState(() => {
@@ -52,6 +56,22 @@ export default function ItemEditorPage() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Save draft to history whenever items change
+  useEffect(() => {
+    if (lineItems.length === 0) return
+    sessionStorage.setItem('draftSessionId', sessionIdRef.current)
+    saveSession({
+      id: sessionIdRef.current,
+      date: new Date().toISOString(),
+      status: 'draft',
+      people: [],
+      lineItems,
+      assignments: new Map(),
+      tipConfig: { mode: 'percentage', percentage: 12.5, fixedAmount: 0 },
+      totals: [],
+    })
+  }, [lineItems, saveSession])
+
   const ocrEmpty = ocrInit.hadOcrInput && lineItems.length === 0
   const subtotal = lineItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
@@ -73,7 +93,7 @@ export default function ItemEditorPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           Review Items
         </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
           Tap any item to edit. Add or remove items as needed.
         </p>
       </div>

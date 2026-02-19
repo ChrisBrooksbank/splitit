@@ -33,6 +33,7 @@ export interface PersonTotal {
 export interface BillSession {
   id: string
   date: string // ISO date
+  status?: 'draft' | 'complete'
   restaurantName?: string // optional, from receipt
   people: Person[]
   lineItems: LineItem[]

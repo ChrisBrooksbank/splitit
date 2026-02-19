@@ -33,7 +33,7 @@ export default function LineItemRow({ item, onUpdate, onDelete }: LineItemRowPro
   return (
     <>
       <div
-        className="flex items-center gap-3 px-4 py-3 rounded-xl active:bg-gray-50 dark:active:bg-gray-800 transition-colors cursor-pointer"
+        className="flex items-start gap-3 px-4 py-3 rounded-xl active:bg-gray-50 dark:active:bg-gray-800 transition-colors cursor-pointer"
         onClick={handleRowClick}
         role="button"
         tabIndex={0}
@@ -55,9 +55,9 @@ export default function LineItemRow({ item, onUpdate, onDelete }: LineItemRowPro
         )}
 
         {/* Name */}
-        <span className="flex-1 min-w-0 text-sm text-gray-900 dark:text-gray-100 truncate">
+        <span className="flex-1 min-w-0 text-base text-gray-900 dark:text-gray-100 break-words">
           {item.quantity > 1 && (
-            <span className="text-gray-500 dark:text-gray-400 mr-1">{item.quantity}×</span>
+            <span className="text-gray-600 dark:text-gray-300 mr-1">{item.quantity}×</span>
           )}
           {item.name}
         </span>
@@ -74,7 +74,7 @@ export default function LineItemRow({ item, onUpdate, onDelete }: LineItemRowPro
             onDelete(item.id)
           }}
           aria-label={`Delete ${item.name}`}
-          className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-red-400 active:text-red-500 transition-colors"
+          className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-red-400 active:text-red-500 transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
