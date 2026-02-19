@@ -60,7 +60,7 @@ export default function AiAssistPage() {
       setTimeout(() => setCopied(false), 2000)
     } catch {
       setError(
-        'Could not copy automatically. Please select and copy the prompt text above.'
+        'Could not copy to clipboard. Please check your browser permissions.'
       )
     }
   }
@@ -140,8 +140,8 @@ export default function AiAssistPage() {
   // --- Render ---
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center px-6 py-10">
-      <div className="w-full max-w-sm flex flex-col gap-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center px-6 py-6">
+      <div className="w-full max-w-sm flex flex-col gap-5">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
@@ -226,42 +226,28 @@ export default function AiAssistPage() {
             </div>
           </>
         ) : (
-          /* ====== MANUAL MODE (existing flow, unchanged) ====== */
+          /* ====== MANUAL MODE ====== */
           <>
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-gray-400 dark:text-gray-500">
-                You'll need ChatGPT or a similar AI chatbot open in another app
-                or browser tab.
-              </p>
-            </div>
+            <ol className="list-decimal list-inside text-sm text-gray-500 dark:text-gray-400 space-y-1">
+              <li>Copy the prompt below</li>
+              <li>Open ChatGPT or Claude</li>
+              <li>Attach your bill photo(s) and paste the prompt</li>
+              <li>Copy the AI's response and paste it below</li>
+            </ol>
 
-            {/* Step 1: Copy Prompt */}
             <div className="flex flex-col gap-3">
-              <h2 className="text-base font-medium text-gray-700 dark:text-gray-300">
-                Step 1: Copy the prompt
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Open ChatGPT or Claude, attach your bill photo(s), and paste the
-                prompt. Multiple photos of the same bill are fine.
-              </p>
               <button
                 onClick={handleCopy}
                 className="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-base font-medium rounded-xl active:scale-95 transition-transform"
               >
                 {copied ? 'Copied!' : 'Copy Prompt to Clipboard'}
               </button>
-            </div>
 
-            {/* Step 2: Paste Response */}
-            <div className="flex flex-col gap-3">
-              <h2 className="text-base font-medium text-gray-700 dark:text-gray-300">
-                Step 2: Paste the AI response
-              </h2>
               <textarea
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
                 placeholder="Paste the JSON response here..."
-                rows={6}
+                rows={3}
                 className="w-full text-base text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
               />
               {error && (
