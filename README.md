@@ -1,73 +1,73 @@
-# React + TypeScript + Vite
+# SplitIt
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Split restaurant bills fairly — snap a photo, claim your items, and let SplitIt handle the math.**
 
-Currently, two official plugins are available:
+A fully offline Progressive Web App that makes splitting the bill painless. Photograph a receipt, let OCR extract the line items, pass the phone around the table so everyone claims what they ordered, and get an instant per-person breakdown with proportional tax and tip.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **Photo-to-items** — Snap a picture of the bill; Tesseract.js extracts line items locally (no upload required)
+- **Claim-based splitting** — Each person taps the items they ordered; shared items are divided evenly
+- **Proportional tax & tip** — Tax and tip are distributed based on each person's subtotal
+- **Live sessions** — Share a QR code so everyone can claim items from their own phone via peer-to-peer (PeerJS)
+- **Fully offline** — Service-worker-powered PWA; works without an internet connection after first load
+- **Dark mode** — Automatic and manual theme switching
+- **Installable** — Add to home screen on any device
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- **UI:** React 19, TypeScript, Tailwind CSS v4
+- **Build:** Vite 7 with `vite-plugin-pwa` (Workbox)
+- **State:** Zustand
+- **OCR:** Tesseract.js (WASM, runs entirely in-browser)
+- **Routing:** React Router v7
+- **P2P:** PeerJS (WebRTC)
+- **Testing:** Vitest + React Testing Library
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # Start dev server at http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Command               | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `npm run dev`         | Start development server                     |
+| `npm run build`       | Type-check and production build              |
+| `npm run preview`     | Preview production build locally             |
+| `npm run test`        | Run tests in watch mode                      |
+| `npm run test:run`    | Run tests once                               |
+| `npm run test:coverage` | Run tests with coverage report             |
+| `npm run lint`        | Run ESLint                                   |
+| `npm run format`      | Format code with Prettier                    |
+| `npm run typecheck`   | TypeScript type checking                     |
+| `npm run check`       | Run **all** checks (typecheck + lint + format + tests) |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Deployment
+
+SplitIt is deployed to **Netlify**. Every push to `master` triggers an automatic build and deploy.
+
+- **Build command:** `npm run build`
+- **Publish directory:** `dist`
+- **SPA redirect:** All routes fall back to `index.html` (configured in `netlify.toml`)
+
+## Project Structure
+
 ```
+src/
+  components/   # Reusable UI components
+  pages/        # Route-level page components
+  hooks/        # Custom React hooks
+  store/        # Zustand state stores
+  services/     # OCR, P2P, and other service modules
+  types/        # TypeScript type definitions
+  utils/        # Helper utilities
+  test/         # Test setup and utilities
+```
+
+## License
+
+MIT
