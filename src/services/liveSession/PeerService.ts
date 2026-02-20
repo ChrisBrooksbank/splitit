@@ -1,11 +1,13 @@
 import Peer from 'peerjs'
 import type { DataConnection } from 'peerjs'
-import type { GuestMessage, HostMessage } from './types'
+import type { GuestMessage, HostMessage, InternalMessage } from './types'
 import {
   PEER_CONFIG,
   HOST_TIMEOUT_MS,
   GUEST_TIMEOUT_MS,
   RETRY_CONFIG,
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_TIMEOUT_MS,
   retryDelayMs,
 } from './iceConfig'
 
@@ -18,10 +20,21 @@ type PeerEventMap = {
   'connection-error': [error: Error]
   'status-change': [message: string]
   retry: [attempt: number, maxRetries: number]
+  'guest-stale': [peerId: string]
+  'host-stale': []
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyHandler = (...args: any[]) => void
+
+const PING: InternalMessage = { type: '__PING' }
+const PONG: InternalMessage = { type: '__PONG' }
+
+function isInternalMessage(data: unknown): data is InternalMessage {
+  if (!data || typeof data !== 'object') return false
+  const msg = data as Record<string, unknown>
+  return msg.type === '__PING' || msg.type === '__PONG'
+}
 
 export class PeerService {
   private peer: Peer | null = null
@@ -30,6 +43,12 @@ export class PeerService {
   private listeners: Map<string, Set<AnyHandler>> = new Map()
   private _roomCode: string | null = null
   private destroyed = false
+  private isReconnecting = false
+
+  // Heartbeat tracking
+  private heartbeatIntervals: Map<string, ReturnType<typeof setInterval>> = new Map()
+  private lastPongTimes: Map<string, number> = new Map()
+  private heartbeatCheckers: Map<string, ReturnType<typeof setInterval>> = new Map()
 
   get roomCode(): string | null {
     return this._roomCode
@@ -123,23 +142,108 @@ export class PeerService {
     conn.on('open', () => {
       this.connections.set(conn.peer, conn)
       this.emit('guest-connected', conn.peer)
+      this.startHostHeartbeat(conn)
     })
 
     conn.on('data', (data) => {
+      // Handle internal heartbeat messages
+      if (isInternalMessage(data)) {
+        if (data.type === '__PONG') {
+          this.lastPongTimes.set(conn.peer, Date.now())
+        } else if (data.type === '__PING') {
+          conn.send(PONG)
+        }
+        return
+      }
+
       if (this.isValidGuestMessage(data)) {
         this.emit('guest-message', conn.peer, data as GuestMessage)
+      } else {
+        console.warn('[PeerService] Invalid guest message received:', data)
       }
     })
 
     conn.on('close', () => {
+      this.stopHeartbeat(conn.peer)
       this.connections.delete(conn.peer)
       this.emit('guest-disconnected', conn.peer)
     })
 
     conn.on('error', () => {
+      this.stopHeartbeat(conn.peer)
       this.connections.delete(conn.peer)
       this.emit('guest-disconnected', conn.peer)
     })
+  }
+
+  private startHostHeartbeat(conn: DataConnection): void {
+    const peerId = conn.peer
+    this.lastPongTimes.set(peerId, Date.now())
+
+    // Send PING at regular intervals
+    const pingInterval = setInterval(() => {
+      if (this.connections.has(peerId)) {
+        conn.send(PING)
+      }
+    }, HEARTBEAT_INTERVAL_MS)
+    this.heartbeatIntervals.set(peerId, pingInterval)
+
+    // Check for stale connection
+    const checker = setInterval(() => {
+      const lastPong = this.lastPongTimes.get(peerId) ?? 0
+      if (Date.now() - lastPong > HEARTBEAT_TIMEOUT_MS) {
+        this.stopHeartbeat(peerId)
+        this.connections.delete(peerId)
+        conn.close()
+        this.emit('guest-stale', peerId)
+      }
+    }, HEARTBEAT_INTERVAL_MS)
+    this.heartbeatCheckers.set(peerId, checker)
+  }
+
+  private startGuestHeartbeat(): void {
+    const key = '__host'
+    this.lastPongTimes.set(key, Date.now())
+
+    const pingInterval = setInterval(() => {
+      if (this.hostConnection) {
+        this.hostConnection.send(PING)
+      }
+    }, HEARTBEAT_INTERVAL_MS)
+    this.heartbeatIntervals.set(key, pingInterval)
+
+    const checker = setInterval(() => {
+      const lastPong = this.lastPongTimes.get(key) ?? 0
+      if (Date.now() - lastPong > HEARTBEAT_TIMEOUT_MS) {
+        this.stopHeartbeat(key)
+        this.hostConnection?.close()
+        this.hostConnection = null
+        this.emit('host-stale')
+      }
+    }, HEARTBEAT_INTERVAL_MS)
+    this.heartbeatCheckers.set(key, checker)
+  }
+
+  private stopHeartbeat(key: string): void {
+    const pingInterval = this.heartbeatIntervals.get(key)
+    if (pingInterval) {
+      clearInterval(pingInterval)
+      this.heartbeatIntervals.delete(key)
+    }
+    const checker = this.heartbeatCheckers.get(key)
+    if (checker) {
+      clearInterval(checker)
+      this.heartbeatCheckers.delete(key)
+    }
+    this.lastPongTimes.delete(key)
+  }
+
+  private stopAllHeartbeats(): void {
+    for (const interval of this.heartbeatIntervals.values()) clearInterval(interval)
+    for (const checker of this.heartbeatCheckers.values()) clearInterval(checker)
+    this.heartbeatIntervals.clear()
+    this.heartbeatCheckers.clear()
+    this.lastPongTimes.clear()
   }
 
   async joinAsGuest(roomCode: string): Promise<void> {
@@ -192,22 +296,37 @@ export class PeerService {
           clearTimeout(timeout)
           this.hostConnection = conn
           this.emit('open', this.peer!.id)
+          this.startGuestHeartbeat()
           resolve()
         })
 
         conn.on('data', (data) => {
+          // Handle internal heartbeat messages
+          if (isInternalMessage(data)) {
+            if (data.type === '__PONG') {
+              this.lastPongTimes.set('__host', Date.now())
+            } else if (data.type === '__PING') {
+              conn.send(PONG)
+            }
+            return
+          }
+
           if (this.isValidHostMessage(data)) {
             this.emit('host-message', data as HostMessage)
+          } else {
+            console.warn('[PeerService] Invalid host message received:', data)
           }
         })
 
         conn.on('close', () => {
+          this.stopHeartbeat('__host')
           this.hostConnection = null
           this.emit('connection-error', new Error('Connection to host closed'))
         })
 
         conn.on('error', (err) => {
           clearTimeout(timeout)
+          this.stopHeartbeat('__host')
           this.hostConnection = null
           this.emit('connection-error', err as unknown as Error)
           reject(err)
@@ -222,23 +341,53 @@ export class PeerService {
     })
   }
 
-  broadcastToAll(msg: HostMessage): void {
-    for (const conn of this.connections.values()) {
-      conn.send(msg)
+  async reconnectToHost(roomCode: string): Promise<void> {
+    if (this.isReconnecting || this.destroyed) return
+    this.isReconnecting = true
+
+    try {
+      // Tear down existing peer without clearing listeners or destroyed flag
+      this.stopAllHeartbeats()
+      this.hostConnection = null
+      this.peer?.destroy()
+      this.peer = null
+
+      // Re-use the same retry loop
+      await this.joinAsGuest(roomCode)
+    } finally {
+      this.isReconnecting = false
     }
   }
 
-  sendToGuest(peerId: string, msg: HostMessage): void {
+  broadcastToAll(msg: HostMessage): number {
+    let sent = 0
+    for (const conn of this.connections.values()) {
+      conn.send(msg)
+      sent++
+    }
+    if (sent === 0) {
+      console.warn('[PeerService] broadcastToAll: no connected guests')
+    }
+    return sent
+  }
+
+  sendToGuest(peerId: string, msg: HostMessage): boolean {
     const conn = this.connections.get(peerId)
     if (conn) {
       conn.send(msg)
+      return true
     }
+    console.warn(`[PeerService] sendToGuest: no connection for peer ${peerId}`)
+    return false
   }
 
-  sendToHost(msg: GuestMessage): void {
+  sendToHost(msg: GuestMessage): boolean {
     if (this.hostConnection) {
       this.hostConnection.send(msg)
+      return true
     }
+    console.warn('[PeerService] sendToHost: no host connection')
+    return false
   }
 
   getConnectedPeerIds(): string[] {
@@ -253,6 +402,7 @@ export class PeerService {
   destroy(): void {
     if (this.destroyed) return
     this.destroyed = true
+    this.stopAllHeartbeats()
     this.connections.clear()
     this.hostConnection = null
     this.listeners.clear()

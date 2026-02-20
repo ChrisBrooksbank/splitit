@@ -70,6 +70,40 @@ describe('GuestClaimingView', () => {
     expect(onClaim).toHaveBeenCalledWith('item-2')
   })
 
+  it('does not call onClaim or onUnclaim when disabled', () => {
+    const onClaim = vi.fn()
+    const onUnclaim = vi.fn()
+    render(
+      <GuestClaimingView
+        syncedState={mockSyncedState}
+        myPersonId="p1"
+        onClaim={onClaim}
+        onUnclaim={onUnclaim}
+        onSetAssignees={vi.fn()}
+        disabled
+      />
+    )
+
+    // All checkboxes should have aria-disabled
+    const checkboxes = screen.getAllByRole('checkbox')
+    for (const cb of checkboxes) {
+      expect(cb).toHaveAttribute('aria-disabled', 'true')
+    }
+
+    // Clicking should not trigger callbacks
+    fireEvent.click(screen.getByRole('checkbox', { name: /Pizza/ }))
+    expect(onUnclaim).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Beer/ }))
+    expect(onClaim).not.toHaveBeenCalled()
+
+    // Share buttons should be disabled
+    const shareButtons = screen.getAllByRole('button', { name: /Split .* among/ })
+    for (const btn of shareButtons) {
+      expect(btn).toBeDisabled()
+    }
+  })
+
   it('returns null if person not found', () => {
     const { container } = render(
       <GuestClaimingView

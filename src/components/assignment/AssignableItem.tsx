@@ -10,6 +10,7 @@ interface AssignableItemProps {
   isUnassigned: boolean // true if nobody has claimed this item (highlighted)
   onToggle: (itemId: string) => void // tap to claim/unclaim
   onShareClick: (itemId: string) => void // open shared-item bottom sheet
+  disabled?: boolean
 }
 
 export default function AssignableItem({
@@ -20,6 +21,7 @@ export default function AssignableItem({
   isUnassigned,
   onToggle,
   onShareClick,
+  disabled = false,
 }: AssignableItemProps) {
   const totalPrice = item.price * item.quantity
 
@@ -34,19 +36,23 @@ export default function AssignableItem({
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors cursor-pointer select-none ${
-        isAssigned
-          ? 'bg-gray-50 dark:bg-gray-800'
-          : isUnassigned
-            ? 'bg-amber-50 border border-amber-200'
-            : 'active:bg-gray-50 dark:active:bg-gray-800'
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors select-none ${
+        disabled
+          ? 'opacity-50 cursor-not-allowed'
+          : isAssigned
+            ? 'bg-gray-50 dark:bg-gray-800 cursor-pointer'
+            : isUnassigned
+              ? 'bg-amber-50 border border-amber-200 cursor-pointer'
+              : 'active:bg-gray-50 dark:active:bg-gray-800 cursor-pointer'
       }`}
-      onClick={handleRowClick}
+      onClick={disabled ? undefined : handleRowClick}
       role="checkbox"
       aria-checked={isAssigned}
-      tabIndex={0}
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : 0}
       aria-label={`${item.name} — ${formatCurrency(totalPrice)}${isAssigned ? ', claimed' : ''}`}
       onKeyDown={(e) => {
+        if (disabled) return
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
           handleRowClick()
@@ -110,8 +116,9 @@ export default function AssignableItem({
       {/* Share button — opens SharedItemSplitter */}
       <button
         onClick={handleShareClick}
+        disabled={disabled}
         aria-label={`Split ${item.name} among multiple people`}
-        className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:text-gray-800 transition-colors"
+        className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

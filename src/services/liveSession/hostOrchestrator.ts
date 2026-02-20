@@ -95,6 +95,10 @@ export function createHostOrchestrator(peerService: PeerService) {
     broadcastState()
   }
 
+  const handleGuestStale = (peerId: string) => {
+    useLiveSessionStore.getState().disconnectGuest(peerId)
+  }
+
   const start = () => {
     peerService.on('guest-message', handleGuestMessage)
 
@@ -110,11 +114,14 @@ export function createHostOrchestrator(peerService: PeerService) {
     peerService.on('guest-disconnected', (peerId) => {
       useLiveSessionStore.getState().disconnectGuest(peerId)
     })
+
+    peerService.on('guest-stale', handleGuestStale)
   }
 
   const destroy = () => {
     debouncedBroadcast.cancel()
     peerService.off('guest-message', handleGuestMessage)
+    peerService.off('guest-stale', handleGuestStale)
   }
 
   return { start, broadcastState, advancePhase, destroy }

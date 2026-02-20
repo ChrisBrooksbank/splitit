@@ -13,6 +13,8 @@ vi.mock('../../src/services/liveSession/PeerService', () => ({
     joinAsGuest = mockJoinAsGuest
     destroy = mockDestroy
     sendToHost = mockSendToHost
+    isConnected = vi.fn(() => true)
+    reconnectToHost = vi.fn()
     on = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
       handlers[event] = handler
     })

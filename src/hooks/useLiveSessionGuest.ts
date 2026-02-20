@@ -3,7 +3,7 @@ import { PeerService } from '../services/liveSession/PeerService'
 import { useLiveSessionStore } from '../store/liveSessionStore'
 import type { SyncPayload } from '../services/liveSession/types'
 
-type ConnectionStatus = 'connecting' | 'connected' | 'error' | 'disconnected'
+type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'error' | 'disconnected'
 
 export function useLiveSessionGuest(roomCode: string) {
   const peerRef = useRef<PeerService | null>(null)
@@ -22,6 +22,39 @@ export function useLiveSessionGuest(roomCode: string) {
     peer.on('status-change', (msg) => {
       if (!cancelled) setStatusMessage(msg)
     })
+
+    const attemptReconnect = async () => {
+      if (cancelled) return
+      setConnectionStatus('reconnecting')
+      useLiveSessionStore.getState().setConnectionStatus('reconnecting')
+      setStatusMessage('Reconnecting...')
+
+      try {
+        await peer.reconnectToHost(roomCode)
+        if (cancelled) return
+
+        setConnectionStatus('connected')
+        setStatusMessage(null)
+        useLiveSessionStore.getState().setConnectionStatus('connected')
+
+        // Re-identify if we had a personId
+        const { myPersonId: pid } = useLiveSessionStore.getState()
+        const syncState = useLiveSessionStore.getState().syncedState
+        if (pid) {
+          const person = syncState?.people.find((p) => p.id === pid)
+          peer.sendToHost({
+            type: 'IDENTIFY',
+            personId: pid,
+            displayName: person?.name ?? 'Guest',
+          })
+        }
+      } catch {
+        if (!cancelled) {
+          setConnectionStatus('disconnected')
+          useLiveSessionStore.getState().setConnectionStatus('disconnected')
+        }
+      }
+    }
 
     const connect = async () => {
       setConnectionStatus('connecting')
@@ -44,10 +77,11 @@ export function useLiveSessionGuest(roomCode: string) {
         })
 
         peer.on('connection-error', () => {
-          if (!cancelled) {
-            setConnectionStatus('disconnected')
-            useLiveSessionStore.getState().setConnectionStatus('disconnected')
-          }
+          if (!cancelled) attemptReconnect()
+        })
+
+        peer.on('host-stale', () => {
+          if (!cancelled) attemptReconnect()
         })
       } catch {
         if (!cancelled) {
@@ -65,12 +99,15 @@ export function useLiveSessionGuest(roomCode: string) {
     }
   }, [roomCode])
 
+  const isConnected = connectionStatus === 'connected'
+
   const identify = useCallback((personId: string, displayName: string) => {
     useLiveSessionStore.getState().setMyPersonId(personId)
     peerRef.current?.sendToHost({ type: 'IDENTIFY', personId, displayName })
   }, [])
 
   const sendClaim = useCallback((itemId: string) => {
+    if (!peerRef.current?.isConnected()) return
     const personId = useLiveSessionStore.getState().myPersonId
     if (personId) {
       peerRef.current?.sendToHost({ type: 'CLAIM_ITEM', itemId, personId })
@@ -78,6 +115,7 @@ export function useLiveSessionGuest(roomCode: string) {
   }, [])
 
   const sendUnclaim = useCallback((itemId: string) => {
+    if (!peerRef.current?.isConnected()) return
     const personId = useLiveSessionStore.getState().myPersonId
     if (personId) {
       peerRef.current?.sendToHost({ type: 'UNCLAIM_ITEM', itemId, personId })
@@ -86,12 +124,14 @@ export function useLiveSessionGuest(roomCode: string) {
 
   const sendSetAssignees = useCallback(
     (itemId: string, personIds: string[], portions: Record<string, number>) => {
+      if (!peerRef.current?.isConnected()) return
       peerRef.current?.sendToHost({ type: 'SET_ASSIGNEES', itemId, personIds, portions })
     },
     []
   )
 
   const sendTip = useCallback((mode: 'percentage' | 'fixed', value: number) => {
+    if (!peerRef.current?.isConnected()) return
     const personId = useLiveSessionStore.getState().myPersonId
     if (personId) {
       peerRef.current?.sendToHost({ type: 'SET_TIP', personId, mode, value })
@@ -104,6 +144,7 @@ export function useLiveSessionGuest(roomCode: string) {
     syncedState: syncedState as SyncPayload | null,
     myPersonId,
     phase,
+    isConnected,
     identify,
     sendClaim,
     sendUnclaim,

@@ -9,6 +9,7 @@ interface GuestClaimingViewProps {
   onClaim: (itemId: string) => void
   onUnclaim: (itemId: string) => void
   onSetAssignees: (itemId: string, personIds: string[], portions: Record<string, number>) => void
+  disabled?: boolean
 }
 
 export default function GuestClaimingView({
@@ -17,6 +18,7 @@ export default function GuestClaimingView({
   onClaim,
   onUnclaim,
   onSetAssignees,
+  disabled = false,
 }: GuestClaimingViewProps) {
   const [splitterItemId, setSplitterItemId] = useState<string | null>(null)
 
@@ -26,6 +28,7 @@ export default function GuestClaimingView({
   if (!currentPerson) return null
 
   const handleToggle = (itemId: string) => {
+    if (disabled) return
     const assignees = assignments[itemId] ?? []
     if (assignees.includes(myPersonId)) {
       onUnclaim(itemId)
@@ -62,6 +65,7 @@ export default function GuestClaimingView({
             isUnassigned={itemAssignees.length === 0}
             onToggle={handleToggle}
             onShareClick={setSplitterItemId}
+            disabled={disabled}
           />
         )
       })}

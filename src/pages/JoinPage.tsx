@@ -13,12 +13,15 @@ export default function JoinPage() {
     syncedState,
     myPersonId,
     phase,
+    isConnected,
     identify,
     sendClaim,
     sendUnclaim,
     sendSetAssignees,
     sendTip,
   } = useLiveSessionGuest(roomCode ?? '')
+
+  const isReconnecting = connectionStatus === 'reconnecting'
 
   // Missing or empty room code
   if (!roomCode) {
@@ -73,7 +76,7 @@ export default function JoinPage() {
     )
   }
 
-  // Disconnected
+  // Disconnected (reconnect failed)
   if (connectionStatus === 'disconnected' && syncedState) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center px-6 text-center">
@@ -154,10 +157,21 @@ export default function JoinPage() {
     )
   }
 
+  // Reconnecting banner
+  const reconnectingBanner = isReconnecting ? (
+    <div className="mx-4 mb-3 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl flex items-center gap-2">
+      <div className="h-4 w-4 animate-spin rounded-full border-2 border-amber-300 border-t-amber-600" />
+      <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+        Reconnecting...
+      </span>
+    </div>
+  ) : null
+
   // Phase-based views
   if (phase === 'claiming' || phase === 'lobby') {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 px-4 pt-4 pb-8">
+        {reconnectingBanner}
         {phase === 'lobby' ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 dark:border-gray-700 border-t-gray-800 dark:border-t-gray-200" />
@@ -172,6 +186,7 @@ export default function JoinPage() {
             onClaim={sendClaim}
             onUnclaim={sendUnclaim}
             onSetAssignees={sendSetAssignees}
+            disabled={!isConnected}
           />
         )}
       </div>
@@ -181,7 +196,13 @@ export default function JoinPage() {
   if (phase === 'tips') {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 px-4 pt-4 pb-8">
-        <GuestTipView syncedState={syncedState} myPersonId={myPersonId} onSetTip={sendTip} />
+        {reconnectingBanner}
+        <GuestTipView
+          syncedState={syncedState}
+          myPersonId={myPersonId}
+          onSetTip={sendTip}
+          disabled={!isConnected}
+        />
       </div>
     )
   }
@@ -189,6 +210,7 @@ export default function JoinPage() {
   if (phase === 'summary') {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 px-4 pt-4 pb-8">
+        {reconnectingBanner}
         <GuestSummaryView syncedState={syncedState} myPersonId={myPersonId} />
       </div>
     )

@@ -41,6 +41,12 @@ export const PEER_CONFIG: PeerJSOption = {
   },
 }
 
+/** Heartbeat interval — send PING every 15 s */
+export const HEARTBEAT_INTERVAL_MS = 15_000
+
+/** If no PONG received within 45 s, consider the peer stale */
+export const HEARTBEAT_TIMEOUT_MS = 45_000
+
 /** Timeout for host to register with signaling server (ms) */
 export const HOST_TIMEOUT_MS = 20_000
 

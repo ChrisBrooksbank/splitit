@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { SessionPhase, SyncPayload, GuestInfo } from '../services/liveSession/types'
 
-type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
+type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error'
 
 interface LiveSessionStore {
   isLive: boolean
