@@ -10,6 +10,7 @@ import {
   ImagePlus,
   ScanLine,
   X,
+  QrCode,
 } from 'lucide-react'
 import ImageCapture from '../components/camera/ImageCapture'
 import ImagePreview from '../components/camera/ImagePreview'
@@ -246,14 +247,24 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* History link */}
-        <button
-          onClick={() => navigate('/history')}
-          className="text-sm text-gray-600 dark:text-gray-400 underline-offset-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-        >
-          <Clock size={14} className="inline -mt-0.5 mr-1" />
-          View History
-        </button>
+        {/* Secondary links */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/history')}
+            className="text-sm text-gray-600 dark:text-gray-400 underline-offset-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          >
+            <Clock size={14} className="inline -mt-0.5 mr-1" />
+            View History
+          </button>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
+          <button
+            onClick={() => navigate('/import-qr')}
+            className="text-sm text-gray-600 dark:text-gray-400 underline-offset-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          >
+            <QrCode size={14} className="inline -mt-0.5 mr-1" />
+            Import from QR
+          </button>
+        </div>
 
         <span className="text-xs text-gray-500 dark:text-gray-500">v{__APP_VERSION__}</span>
       </div>

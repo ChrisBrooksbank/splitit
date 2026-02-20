@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
-import { Copy, PlusCircle } from 'lucide-react'
+import { Copy, PlusCircle, QrCode } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -293,6 +293,14 @@ export default function SummaryPage() {
         >
           <Copy size={18} className="inline -mt-0.5 mr-1.5" />
           Copy Summary
+        </button>
+        <button
+          onClick={() => navigate('/share')}
+          className="w-full py-3 px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-base font-medium rounded-2xl active:scale-95 transition-transform"
+          aria-label="Share bill via QR code"
+        >
+          <QrCode size={18} className="inline -mt-0.5 mr-1.5" />
+          Share via QR
         </button>
         <button
           onClick={handleStartNewBill}

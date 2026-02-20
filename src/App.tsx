@@ -18,6 +18,8 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage'))
 const AiAssistPage = lazy(() => import('./pages/AiAssistPage'))
 const LiveSessionPage = lazy(() => import('./pages/LiveSessionPage'))
 const JoinPage = lazy(() => import('./pages/JoinPage'))
+const ShareQRPage = lazy(() => import('./pages/ShareQRPage'))
+const ImportQRPage = lazy(() => import('./pages/ImportQRPage'))
 
 function PageLoader() {
   return (
@@ -46,6 +48,8 @@ function AnimatedRoutes() {
         <Route path="/ai-assist" element={<AiAssistPage />} />
         <Route path="/live-session" element={<LiveSessionPage />} />
         <Route path="/join/:roomCode" element={<JoinPage />} />
+        <Route path="/share" element={<ShareQRPage />} />
+        <Route path="/import-qr" element={<ImportQRPage />} />
       </Routes>
     </div>
   )

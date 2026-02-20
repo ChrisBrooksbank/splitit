@@ -1,6 +1,13 @@
 import Peer from 'peerjs'
 import type { DataConnection } from 'peerjs'
 import type { GuestMessage, HostMessage } from './types'
+import {
+  PEER_CONFIG,
+  HOST_TIMEOUT_MS,
+  GUEST_TIMEOUT_MS,
+  RETRY_CONFIG,
+  retryDelayMs,
+} from './iceConfig'
 
 type PeerEventMap = {
   open: [id: string]
@@ -9,6 +16,8 @@ type PeerEventMap = {
   'guest-message': [peerId: string, message: GuestMessage]
   'host-message': [message: HostMessage]
   'connection-error': [error: Error]
+  'status-change': [message: string]
+  retry: [attempt: number, maxRetries: number]
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,12 +56,49 @@ export class PeerService {
   }
 
   async startHost(): Promise<string> {
+    for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      if (this.destroyed) throw new Error('PeerService destroyed')
+
+      if (attempt > 0) {
+        const delay = retryDelayMs(attempt - 1)
+        this.emit('retry', attempt, RETRY_CONFIG.maxRetries)
+        this.emit(
+          'status-change',
+          `Retrying... (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries + 1})`
+        )
+        await this.sleep(delay)
+        if (this.destroyed) throw new Error('PeerService destroyed')
+      } else {
+        this.emit('status-change', 'Connecting to signaling server...')
+      }
+
+      try {
+        const id = await this.attemptStartHost()
+        this.emit('status-change', 'Connected')
+        return id
+      } catch (err) {
+        // Destroy failed peer before retrying
+        this.peer?.destroy()
+        this.peer = null
+
+        if (attempt === RETRY_CONFIG.maxRetries) {
+          this.emit('status-change', 'Connection failed')
+          throw err
+        }
+      }
+    }
+
+    // Unreachable, but TypeScript needs it
+    throw new Error('Host start failed')
+  }
+
+  private attemptStartHost(): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error('Host start timed out after 10s'))
-      }, 10_000)
+        reject(new Error('Host start timed out'))
+      }, HOST_TIMEOUT_MS)
 
-      this.peer = new Peer()
+      this.peer = new Peer(PEER_CONFIG)
 
       this.peer.on('open', (id) => {
         clearTimeout(timeout)
@@ -68,38 +114,76 @@ export class PeerService {
       })
 
       this.peer.on('connection', (conn) => {
-        conn.on('open', () => {
-          this.connections.set(conn.peer, conn)
-          this.emit('guest-connected', conn.peer)
-        })
-
-        conn.on('data', (data) => {
-          if (this.isValidGuestMessage(data)) {
-            this.emit('guest-message', conn.peer, data as GuestMessage)
-          }
-        })
-
-        conn.on('close', () => {
-          this.connections.delete(conn.peer)
-          this.emit('guest-disconnected', conn.peer)
-        })
-
-        conn.on('error', () => {
-          this.connections.delete(conn.peer)
-          this.emit('guest-disconnected', conn.peer)
-        })
+        this.setupGuestConnection(conn)
       })
+    })
+  }
+
+  private setupGuestConnection(conn: DataConnection): void {
+    conn.on('open', () => {
+      this.connections.set(conn.peer, conn)
+      this.emit('guest-connected', conn.peer)
+    })
+
+    conn.on('data', (data) => {
+      if (this.isValidGuestMessage(data)) {
+        this.emit('guest-message', conn.peer, data as GuestMessage)
+      }
+    })
+
+    conn.on('close', () => {
+      this.connections.delete(conn.peer)
+      this.emit('guest-disconnected', conn.peer)
+    })
+
+    conn.on('error', () => {
+      this.connections.delete(conn.peer)
+      this.emit('guest-disconnected', conn.peer)
     })
   }
 
   async joinAsGuest(roomCode: string): Promise<void> {
     this._roomCode = roomCode
+
+    for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      if (this.destroyed) throw new Error('PeerService destroyed')
+
+      if (attempt > 0) {
+        const delay = retryDelayMs(attempt - 1)
+        this.emit('retry', attempt, RETRY_CONFIG.maxRetries)
+        this.emit(
+          'status-change',
+          `Retrying... (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries + 1})`
+        )
+        await this.sleep(delay)
+        if (this.destroyed) throw new Error('PeerService destroyed')
+      } else {
+        this.emit('status-change', 'Connecting...')
+      }
+
+      try {
+        await this.attemptJoinAsGuest(roomCode)
+        this.emit('status-change', 'Connected')
+        return
+      } catch (err) {
+        this.peer?.destroy()
+        this.peer = null
+
+        if (attempt === RETRY_CONFIG.maxRetries) {
+          this.emit('status-change', 'Connection failed')
+          throw err
+        }
+      }
+    }
+  }
+
+  private attemptJoinAsGuest(roomCode: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error('Guest join timed out after 10s'))
-      }, 10_000)
+        reject(new Error('Guest join timed out'))
+      }, GUEST_TIMEOUT_MS)
 
-      this.peer = new Peer()
+      this.peer = new Peer(PEER_CONFIG)
 
       this.peer.on('open', () => {
         const conn = this.peer!.connect(roomCode, { reliable: true })
@@ -175,6 +259,10 @@ export class PeerService {
     this.peer?.destroy()
     this.peer = null
     this._roomCode = null
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   private isValidGuestMessage(data: unknown): data is GuestMessage {

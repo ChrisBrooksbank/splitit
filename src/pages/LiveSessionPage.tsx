@@ -6,7 +6,7 @@ import StepIndicator from '../components/layout/StepIndicator'
 
 export default function LiveSessionPage() {
   const navigate = useNavigate()
-  const { roomCode, guests, isStarting, error, advancePhase } = useLiveSessionHost()
+  const { roomCode, guests, isStarting, error, statusMessage, advancePhase } = useLiveSessionHost()
 
   const identifiedGuests = guests.filter((g) => g.personId !== null && g.connected)
   const canStart = identifiedGuests.length >= 1
@@ -23,7 +23,9 @@ export default function LiveSessionPage() {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center px-6">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 dark:border-gray-700 border-t-gray-800 dark:border-t-gray-200" />
-        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Starting live session...</p>
+        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+          {statusMessage ?? 'Starting live session...'}
+        </p>
       </div>
     )
   }
@@ -39,12 +41,20 @@ export default function LiveSessionPage() {
           Connection Failed
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{error}</p>
-        <button
-          onClick={() => navigate('/assign')}
-          className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium"
-        >
-          Use Pass-Around Instead
-        </button>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => navigate('/assign')}
+            className="w-full px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium"
+          >
+            Use Pass-Around Instead
+          </button>
+        </div>
       </div>
     )
   }

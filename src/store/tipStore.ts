@@ -27,6 +27,9 @@ interface TipStore {
   // Set all people to the same percentage
   setAllPercentage: (percentage: number) => void
 
+  // Bulk set all person tips (for QR import)
+  setAllPersonTips: (personTips: Record<string, PersonTip>) => void
+
   reset: () => void
 }
 
@@ -94,6 +97,8 @@ export const useTipStore = create<TipStore>()(
         }
         set({ personTips: updated })
       },
+
+      setAllPersonTips: (personTips) => set({ personTips }),
 
       reset: () => set(initialState),
     }),

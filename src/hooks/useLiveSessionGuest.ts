@@ -8,6 +8,7 @@ type ConnectionStatus = 'connecting' | 'connected' | 'error' | 'disconnected'
 export function useLiveSessionGuest(roomCode: string) {
   const peerRef = useRef<PeerService | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting')
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
   const syncedState = useLiveSessionStore((s) => s.syncedState)
   const myPersonId = useLiveSessionStore((s) => s.myPersonId)
@@ -18,6 +19,10 @@ export function useLiveSessionGuest(roomCode: string) {
     const peer = new PeerService()
     peerRef.current = peer
 
+    peer.on('status-change', (msg) => {
+      if (!cancelled) setStatusMessage(msg)
+    })
+
     const connect = async () => {
       setConnectionStatus('connecting')
       useLiveSessionStore.getState().startSession('guest', roomCode)
@@ -26,6 +31,7 @@ export function useLiveSessionGuest(roomCode: string) {
         if (cancelled) return
 
         setConnectionStatus('connected')
+        setStatusMessage(null)
         useLiveSessionStore.getState().setConnectionStatus('connected')
 
         peer.on('host-message', (msg) => {
@@ -94,6 +100,7 @@ export function useLiveSessionGuest(roomCode: string) {
 
   return {
     connectionStatus,
+    statusMessage,
     syncedState: syncedState as SyncPayload | null,
     myPersonId,
     phase,

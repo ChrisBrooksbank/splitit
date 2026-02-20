@@ -10,6 +10,7 @@ export function useLiveSessionHost() {
   const [roomCode, setRoomCode] = useState<string | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
   const guests = useLiveSessionStore((s) => s.guests)
   const phase = useLiveSessionStore((s) => s.phase)
@@ -32,6 +33,10 @@ export function useLiveSessionHost() {
     const peer = new PeerService()
     peerRef.current = peer
 
+    peer.on('status-change', (msg) => {
+      if (!cancelled) setStatusMessage(msg)
+    })
+
     const startUp = async () => {
       setIsStarting(true)
       setError(null)
@@ -44,6 +49,7 @@ export function useLiveSessionHost() {
         orchestrator.start()
 
         setRoomCode(code)
+        setStatusMessage(null)
         useLiveSessionStore.getState().startSession('host', code)
         useLiveSessionStore.getState().setConnectionStatus('connected')
         useLiveSessionStore.getState().setAdvancePhaseFn(orchestrator.advancePhase)
@@ -75,5 +81,5 @@ export function useLiveSessionHost() {
     return () => window.removeEventListener('beforeunload', handler)
   }, [roomCode])
 
-  return { roomCode, guests, phase, isStarting, error, advancePhase, endSession }
+  return { roomCode, guests, phase, isStarting, error, statusMessage, advancePhase, endSession }
 }

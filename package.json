@@ -34,6 +34,7 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test:run"
   },
   "dependencies": {
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.575.0",
     "nanoid": "^5.1.6",
     "peerjs": "^1.5.5",

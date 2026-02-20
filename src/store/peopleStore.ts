@@ -20,6 +20,7 @@ interface PeopleStore {
   nextColorIndex: number
 
   addPerson: (name: string) => void
+  setPeople: (people: Person[]) => void
   updatePerson: (id: string, name: string) => void
   removePerson: (id: string) => void
   reset: () => void
@@ -43,6 +44,8 @@ export const usePeopleStore = create<PeopleStore>()(
             nextColorIndex: state.nextColorIndex + 1,
           }
         }),
+
+      setPeople: (people) => set({ people, nextColorIndex: people.length }),
 
       updatePerson: (id, name) =>
         set((state) => ({

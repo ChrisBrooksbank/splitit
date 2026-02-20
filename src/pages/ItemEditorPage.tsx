@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, QrCode } from 'lucide-react'
 import { useBillStore } from '../store/billStore'
 import { useHistoryStore } from '../store/historyStore'
 import { parseReceipt, mergeReceipts, type ParsedReceipt } from '../services/ocr/receiptParser'
@@ -92,13 +92,24 @@ export default function ItemEditorPage() {
       <StepIndicator currentRoute="/editor" />
 
       {/* Header */}
-      <div className="px-4 pt-2 pb-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-          Review Items
-        </h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-          Tap any item to edit. Add or remove items as needed.
-        </p>
+      <div className="px-4 pt-2 pb-4 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+            Review Items
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+            Tap any item to edit. Add or remove items as needed.
+          </p>
+        </div>
+        {lineItems.length > 0 && (
+          <button
+            onClick={() => navigate('/share')}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-95 transition-transform flex-shrink-0 ml-2"
+            aria-label="Share bill via QR code"
+          >
+            <QrCode size={20} className="text-gray-700 dark:text-gray-300" />
+          </button>
+        )}
       </div>
 
       {/* OCR-empty feedback banner */}

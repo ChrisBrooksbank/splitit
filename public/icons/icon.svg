@@ -9,57 +9,46 @@
   <!-- Background circle -->
   <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
 
-  <!-- Left receipt shadow -->
-  <g transform="rotate(-10, 256, 68)">
-    <path d="M124,68 L236,68 Q252,68 252,84 L252,392
-             L228,418 L204,392 L180,418 L156,392 L132,418 L108,392
-             L108,84 Q108,68 124,68 Z"
-          fill="#2e1065" fill-opacity="0.25" transform="translate(4, 6)"/>
-  </g>
-
-  <!-- Right receipt shadow -->
-  <g transform="rotate(10, 256, 68)">
-    <path d="M276,68 L388,68 Q404,68 404,84 L404,392
-             L380,418 L356,392 L332,418 L308,392 L284,418 L260,392
-             L260,84 Q260,68 276,68 Z"
-          fill="#2e1065" fill-opacity="0.25" transform="translate(4, 6)"/>
-  </g>
-
-  <!-- Left receipt -->
-  <g transform="rotate(-10, 256, 68)">
-    <path d="M124,68 L236,68 Q252,68 252,84 L252,392
-             L228,418 L204,392 L180,418 L156,392 L132,418 L108,392
-             L108,84 Q108,68 124,68 Z"
+  <!-- Receipt top half (above the cut) -->
+  <g>
+    <!-- Shadow -->
+    <path d="M166,72 L346,72 Q362,72 362,88 L362,290 L150,290 L150,88 Q150,72 166,72 Z"
+          fill="#2e1065" fill-opacity="0.2" transform="translate(4,4)"/>
+    <!-- White receipt top -->
+    <path d="M166,72 L346,72 Q362,72 362,88 L362,290 L150,290 L150,88 Q150,72 166,72 Z"
           fill="white"/>
-    <!-- Line items -->
-    <rect x="128" y="112" width="100" height="18" rx="9" fill="#A5B4FC"/>
-    <rect x="128" y="150" width="72" height="18" rx="9" fill="#C7D2FE"/>
-    <rect x="128" y="198" width="86" height="18" rx="9" fill="#DDD6FE"/>
-    <!-- Dashed separator -->
-    <line x1="128" y1="244" x2="232" y2="244" stroke="#C7D2FE" stroke-width="4" stroke-dasharray="12 8"/>
-    <!-- Total -->
-    <rect x="148" y="268" width="84" height="22" rx="11" fill="#4F46E5"/>
+    <!-- Thick line items -->
+    <rect x="186" y="120" width="140" height="22" rx="11" fill="#A5B4FC"/>
+    <rect x="186" y="164" width="100" height="22" rx="11" fill="#C7D2FE"/>
+    <rect x="186" y="208" width="120" height="22" rx="11" fill="#C7D2FE"/>
+    <rect x="186" y="252" width="80" height="22" rx="11" fill="#DDD6FE"/>
   </g>
 
-  <!-- Right receipt -->
-  <g transform="rotate(10, 256, 68)">
-    <path d="M276,68 L388,68 Q404,68 404,84 L404,392
-             L380,418 L356,392 L332,418 L308,392 L284,418 L260,392
-             L260,84 Q260,68 276,68 Z"
-          fill="white"/>
-    <!-- Line items -->
-    <rect x="280" y="112" width="100" height="18" rx="9" fill="#A5B4FC"/>
-    <rect x="280" y="150" width="72" height="18" rx="9" fill="#C7D2FE"/>
-    <rect x="280" y="198" width="86" height="18" rx="9" fill="#DDD6FE"/>
-    <!-- Dashed separator -->
-    <line x1="280" y1="244" x2="384" y2="244" stroke="#C7D2FE" stroke-width="4" stroke-dasharray="12 8"/>
-    <!-- Total -->
-    <rect x="290" y="268" width="84" height="22" rx="11" fill="#4F46E5"/>
+  <!-- Amber cut line / scissors divider -->
+  <rect x="130" y="296" width="252" height="8" rx="4" fill="#F59E0B"/>
+
+  <!-- Scissors icon at the left of the cut -->
+  <g transform="translate(128, 300)">
+    <!-- Two scissor blades as circles with a cross -->
+    <circle cx="-16" cy="-12" r="10" fill="none" stroke="#F59E0B" stroke-width="4"/>
+    <circle cx="-16" cy="12" r="10" fill="none" stroke="#F59E0B" stroke-width="4"/>
+    <line x1="-6" y1="-8" x2="14" y2="6" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+    <line x1="-6" y1="8" x2="14" y2="-6" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
   </g>
 
-  <!-- Split accent: small amber diamond between receipts -->
-  <g transform="translate(256, 340)">
-    <circle cx="0" cy="0" r="22" fill="#F59E0B"/>
-    <rect x="-8" y="-3" width="16" height="6" rx="3" fill="white"/>
+  <!-- Receipt bottom half (below the cut, offset down+right to show split) -->
+  <g transform="translate(8, 16)">
+    <!-- Shadow -->
+    <path d="M150,310 L362,310 L362,400
+             L342,424 L322,400 L302,424 L282,400 L262,424 L242,400 L222,424 L202,400 L182,424 L162,400
+             L150,400 Z"
+          fill="#2e1065" fill-opacity="0.2" transform="translate(4,4)"/>
+    <!-- White receipt bottom -->
+    <path d="M150,310 L362,310 L362,400
+             L342,424 L322,400 L302,424 L282,400 L262,424 L242,400 L222,424 L202,400 L182,424 L162,400
+             L150,400 Z"
+          fill="white" fill-opacity="0.9"/>
+    <!-- Total bar -->
+    <rect x="196" y="340" width="120" height="26" rx="13" fill="#4F46E5"/>
   </g>
 </svg>

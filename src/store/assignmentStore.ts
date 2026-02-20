@@ -33,6 +33,12 @@ interface AssignmentStore {
   // Remove all assignments for a person (e.g. when person is removed)
   removePerson: (personId: string) => void
 
+  // Bulk set all assignments and portions (for QR import)
+  setAllAssignments: (
+    assignments: Record<string, string[]>,
+    portions: Record<string, Record<string, number>>
+  ) => void
+
   reset: () => void
 }
 
@@ -162,6 +168,8 @@ export const useAssignmentStore = create<AssignmentStore>()(
 
           return { assignments: newAssignments, portions: newPortions }
         }),
+
+      setAllAssignments: (assignments, portions) => set({ assignments, portions }),
 
       reset: () => set(initialState),
     }),

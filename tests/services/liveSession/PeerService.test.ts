@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PeerService } from '../../../src/services/liveSession/PeerService'
 
-// Mock peerjs
+// Mock peerjs — accept options argument
 const mockPeerInstance = {
   on: vi.fn(),
   connect: vi.fn(),
@@ -21,8 +21,22 @@ vi.mock('peerjs', () => ({
     connect = mockPeerInstance.connect
     destroy = mockPeerInstance.destroy
     id = mockPeerInstance.id
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    constructor(_options?: unknown) {}
   },
 }))
+
+// Speed up retries for tests
+vi.mock('../../../src/services/liveSession/iceConfig', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    HOST_TIMEOUT_MS: 500,
+    GUEST_TIMEOUT_MS: 500,
+    RETRY_CONFIG: { maxRetries: 2, baseDelayMs: 10 },
+    retryDelayMs: (attempt: number) => 10 * Math.pow(2, attempt),
+  }
+})
 
 describe('PeerService', () => {
   let service: PeerService
@@ -48,13 +62,38 @@ describe('PeerService', () => {
       expect(service.roomCode).toBe('host-id')
     })
 
-    it('rejects on error', async () => {
+    it('rejects after all retries exhausted', async () => {
       mockPeerInstance.on.mockImplementation((event: string, cb: (arg?: unknown) => void) => {
         if (event === 'error') setTimeout(() => cb(new Error('fail')), 0)
         return mockPeerInstance
       })
 
       await expect(service.startHost()).rejects.toThrow('fail')
+    })
+
+    it('emits status-change and retry events during retries', async () => {
+      let callCount = 0
+      mockPeerInstance.on.mockImplementation((event: string, cb: (arg?: unknown) => void) => {
+        callCount++
+        // First two attempts fail, third succeeds
+        if (event === 'error' && callCount <= 4) {
+          setTimeout(() => cb(new Error('fail')), 0)
+        }
+        if (event === 'open' && callCount > 4) {
+          setTimeout(() => cb('host-id'), 0)
+        }
+        return mockPeerInstance
+      })
+
+      const statusHandler = vi.fn()
+      const retryHandler = vi.fn()
+      service.on('status-change', statusHandler)
+      service.on('retry', retryHandler)
+
+      const roomCode = await service.startHost()
+      expect(roomCode).toBe('host-id')
+      expect(retryHandler).toHaveBeenCalled()
+      expect(statusHandler).toHaveBeenCalled()
     })
 
     it('emits guest-connected when a guest connects', async () => {
@@ -109,11 +148,19 @@ describe('PeerService', () => {
       await expect(promise).resolves.toBeUndefined()
       expect(service.roomCode).toBe('room-123')
     })
+
+    it('rejects after all retries exhausted', async () => {
+      mockPeerInstance.on.mockImplementation((event: string, cb: (arg?: unknown) => void) => {
+        if (event === 'error') setTimeout(() => cb(new Error('connection failed')), 0)
+        return mockPeerInstance
+      })
+
+      await expect(service.joinAsGuest('room-123')).rejects.toThrow('connection failed')
+    })
   })
 
   describe('messaging', () => {
     it('broadcastToAll sends to all connections', () => {
-      // Manually set up connections via internal map
       const conn1 = { send: vi.fn() }
       const conn2 = { send: vi.fn() }
       const connections = (service as unknown as { connections: Map<string, unknown> }).connections
@@ -158,14 +205,25 @@ describe('PeerService', () => {
       expect(service.roomCode).toBeNull()
       expect(service.isConnected()).toBe(false)
     })
+
+    it('prevents further retries after destroy', async () => {
+      mockPeerInstance.on.mockImplementation((event: string, cb: (arg?: unknown) => void) => {
+        if (event === 'error') setTimeout(() => cb(new Error('fail')), 0)
+        return mockPeerInstance
+      })
+
+      // Destroy immediately — should abort retry loop
+      const promise = service.startHost()
+      service.destroy()
+
+      await expect(promise).rejects.toThrow()
+    })
   })
 
   describe('event emitter', () => {
     it('on/off works correctly', () => {
       const handler = vi.fn()
       service.on('open', handler)
-
-      // Emit manually
       ;(service as unknown as { emit: (event: string, ...args: unknown[]) => void }).emit(
         'open',
         'test-id'

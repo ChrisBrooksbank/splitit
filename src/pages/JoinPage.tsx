@@ -9,6 +9,7 @@ export default function JoinPage() {
   const { roomCode } = useParams<{ roomCode: string }>()
   const {
     connectionStatus,
+    statusMessage,
     syncedState,
     myPersonId,
     phase,
@@ -41,7 +42,9 @@ export default function JoinPage() {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center px-6">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 dark:border-gray-700 border-t-gray-800 dark:border-t-gray-200" />
-        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Joining session...</p>
+        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+          {statusMessage ?? 'Joining session...'}
+        </p>
       </div>
     )
   }
