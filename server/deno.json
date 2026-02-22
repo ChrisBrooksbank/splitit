@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "start": "deno run --allow-net main.ts",
+    "dev": "deno run --allow-net --watch main.ts"
+  },
+  "compilerOptions": {
+    "strict": true
+  }
+}
