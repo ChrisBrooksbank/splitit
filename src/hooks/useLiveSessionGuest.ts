@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { RelayService, RoomNotFoundError } from '../services/liveSession/RelayService'
 import { useLiveSessionStore } from '../store/liveSessionStore'
 import type { SyncPayload } from '../services/liveSession/types'
@@ -6,8 +6,12 @@ import type { SyncPayload } from '../services/liveSession/types'
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'error' | 'disconnected'
 
 export function useLiveSessionGuest(roomCode: string) {
-  const peerRef = useRef<RelayService | null>(null)
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting')
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(() => {
+    const stored = useLiveSessionStore.getState().connectionStatus
+    return stored === 'disconnected' && useLiveSessionStore.getState().peerService
+      ? 'connected'
+      : (stored as ConnectionStatus)
+  })
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
   const syncedState = useLiveSessionStore((s) => s.syncedState)
@@ -15,9 +19,11 @@ export function useLiveSessionGuest(roomCode: string) {
   const phase = useLiveSessionStore((s) => s.phase)
 
   useEffect(() => {
+    // If peer already exists in store (remount after navigation), skip initialization
+    if (useLiveSessionStore.getState().peerService) return
+
     let cancelled = false
     const peer = new RelayService()
-    peerRef.current = peer
 
     peer.on('status-change', (msg) => {
       if (!cancelled) setStatusMessage(msg)
@@ -67,7 +73,15 @@ export function useLiveSessionGuest(roomCode: string) {
       useLiveSessionStore.getState().startSession('guest', roomCode)
       try {
         await peer.joinAsGuest(roomCode)
-        if (cancelled) return
+        if (cancelled) {
+          peer.destroy()
+          return
+        }
+
+        // Store peer and cleanup function in zustand
+        useLiveSessionStore.getState().setPeerService(peer, () => {
+          peer.destroy()
+        })
 
         setConnectionStatus('connected')
         setStatusMessage(null)
@@ -97,47 +111,52 @@ export function useLiveSessionGuest(roomCode: string) {
 
     return () => {
       cancelled = true
-      peer.destroy()
+      // Don't destroy peer — it's in the store and must survive navigation
     }
   }, [roomCode])
 
   const isConnected = connectionStatus === 'connected'
 
   const identify = useCallback((personId: string, displayName: string) => {
-    if (!peerRef.current?.isConnected()) return
+    const peer = useLiveSessionStore.getState().peerService
+    if (!peer?.isConnected()) return
     useLiveSessionStore.getState().setMyPersonId(personId)
-    peerRef.current.sendToHost({ type: 'IDENTIFY', personId, displayName })
+    peer.sendToHost({ type: 'IDENTIFY', personId, displayName })
   }, [])
 
   const sendClaim = useCallback((itemId: string) => {
-    if (!peerRef.current?.isConnected()) return
+    const peer = useLiveSessionStore.getState().peerService
+    if (!peer?.isConnected()) return
     const personId = useLiveSessionStore.getState().myPersonId
     if (personId) {
-      peerRef.current?.sendToHost({ type: 'CLAIM_ITEM', itemId, personId })
+      peer.sendToHost({ type: 'CLAIM_ITEM', itemId, personId })
     }
   }, [])
 
   const sendUnclaim = useCallback((itemId: string) => {
-    if (!peerRef.current?.isConnected()) return
+    const peer = useLiveSessionStore.getState().peerService
+    if (!peer?.isConnected()) return
     const personId = useLiveSessionStore.getState().myPersonId
     if (personId) {
-      peerRef.current?.sendToHost({ type: 'UNCLAIM_ITEM', itemId, personId })
+      peer.sendToHost({ type: 'UNCLAIM_ITEM', itemId, personId })
     }
   }, [])
 
   const sendSetAssignees = useCallback(
     (itemId: string, personIds: string[], portions: Record<string, number>) => {
-      if (!peerRef.current?.isConnected()) return
-      peerRef.current?.sendToHost({ type: 'SET_ASSIGNEES', itemId, personIds, portions })
+      const peer = useLiveSessionStore.getState().peerService
+      if (!peer?.isConnected()) return
+      peer.sendToHost({ type: 'SET_ASSIGNEES', itemId, personIds, portions })
     },
     []
   )
 
   const sendTip = useCallback((mode: 'percentage' | 'fixed', value: number) => {
-    if (!peerRef.current?.isConnected()) return
+    const peer = useLiveSessionStore.getState().peerService
+    if (!peer?.isConnected()) return
     const personId = useLiveSessionStore.getState().myPersonId
     if (personId) {
-      peerRef.current?.sendToHost({ type: 'SET_TIP', personId, mode, value })
+      peer.sendToHost({ type: 'SET_TIP', personId, mode, value })
     }
   }, [])
 

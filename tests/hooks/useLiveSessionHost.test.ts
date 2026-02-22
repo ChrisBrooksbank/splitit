@@ -79,7 +79,7 @@ describe('useLiveSessionHost', () => {
     expect(result.current.roomCode).toBeNull()
   })
 
-  it('cleans up on unmount', async () => {
+  it('does not destroy peer on unmount (survives navigation)', async () => {
     const { unmount } = renderHook(() => useLiveSessionHost())
 
     await act(async () => {
@@ -87,10 +87,12 @@ describe('useLiveSessionHost', () => {
     })
 
     unmount()
-    expect(mockDestroy).toHaveBeenCalled()
+    // Peer should NOT be destroyed on unmount — it lives in the store
+    expect(mockDestroy).not.toHaveBeenCalled()
+    expect(useLiveSessionStore.getState().peerService).not.toBeNull()
   })
 
-  it('endSession cleans up everything', async () => {
+  it('endSession destroys peer and cleans up', async () => {
     const { result } = renderHook(() => useLiveSessionHost())
 
     await act(async () => {
@@ -101,7 +103,10 @@ describe('useLiveSessionHost', () => {
       result.current.endSession()
     })
 
+    expect(mockDestroy).toHaveBeenCalled()
+    expect(mockOrchestratorDestroy).toHaveBeenCalled()
     expect(result.current.roomCode).toBeNull()
     expect(useLiveSessionStore.getState().isLive).toBe(false)
+    expect(useLiveSessionStore.getState().peerService).toBeNull()
   })
 })

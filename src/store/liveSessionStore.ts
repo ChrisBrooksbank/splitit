@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { RelayService } from '../services/liveSession/RelayService'
 import type { SessionPhase, SyncPayload, GuestInfo } from '../services/liveSession/types'
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error'
@@ -13,6 +14,8 @@ interface LiveSessionStore {
   syncedState: SyncPayload | null
   connectionStatus: ConnectionStatus
   advancePhaseFn: ((phase: SessionPhase) => void) | null
+  peerService: RelayService | null
+  destroyFn: (() => void) | null
 
   startSession: (role: 'host' | 'guest', roomCode: string) => void
   setPhase: (phase: SessionPhase) => void
@@ -23,6 +26,7 @@ interface LiveSessionStore {
   setSyncedState: (state: SyncPayload) => void
   setConnectionStatus: (status: ConnectionStatus) => void
   setAdvancePhaseFn: (fn: ((phase: SessionPhase) => void) | null) => void
+  setPeerService: (peer: RelayService, destroyFn: () => void) => void
   endSession: () => void
 }
 
@@ -36,6 +40,8 @@ const initialState = {
   syncedState: null as SyncPayload | null,
   connectionStatus: 'disconnected' as ConnectionStatus,
   advancePhaseFn: null as ((phase: SessionPhase) => void) | null,
+  peerService: null as RelayService | null,
+  destroyFn: null as (() => void) | null,
 }
 
 export const useLiveSessionStore = create<LiveSessionStore>()((set) => ({
@@ -78,5 +84,11 @@ export const useLiveSessionStore = create<LiveSessionStore>()((set) => ({
 
   setAdvancePhaseFn: (fn) => set({ advancePhaseFn: fn }),
 
-  endSession: () => set(initialState),
+  setPeerService: (peer, destroyFn) => set({ peerService: peer, destroyFn }),
+
+  endSession: () => {
+    const { destroyFn } = useLiveSessionStore.getState()
+    if (destroyFn) destroyFn()
+    set(initialState)
+  },
 }))

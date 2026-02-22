@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { RelayService } from '../services/liveSession/RelayService'
 import { createHostOrchestrator } from '../services/liveSession/hostOrchestrator'
 import { useLiveSessionStore } from '../store/liveSessionStore'
 import type { SessionPhase } from '../services/liveSession/types'
 
 export function useLiveSessionHost() {
-  const peerRef = useRef<RelayService | null>(null)
-  const orchestratorRef = useRef<ReturnType<typeof createHostOrchestrator> | null>(null)
-  const [roomCode, setRoomCode] = useState<string | null>(null)
+  const [roomCode, setRoomCode] = useState<string | null>(
+    () => useLiveSessionStore.getState().roomCode
+  )
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
@@ -16,22 +16,20 @@ export function useLiveSessionHost() {
   const phase = useLiveSessionStore((s) => s.phase)
 
   const advancePhase = useCallback((newPhase: SessionPhase) => {
-    orchestratorRef.current?.advancePhase(newPhase)
+    useLiveSessionStore.getState().advancePhaseFn?.(newPhase)
   }, [])
 
   const endSession = useCallback(() => {
-    orchestratorRef.current?.destroy()
-    peerRef.current?.destroy()
-    peerRef.current = null
-    orchestratorRef.current = null
     setRoomCode(null)
     useLiveSessionStore.getState().endSession()
   }, [])
 
   useEffect(() => {
+    // If peer already exists in store (remount after navigation), skip initialization
+    if (useLiveSessionStore.getState().peerService) return
+
     let cancelled = false
     const peer = new RelayService()
-    peerRef.current = peer
 
     peer.on('status-change', (msg) => {
       if (!cancelled) setStatusMessage(msg)
@@ -42,11 +40,19 @@ export function useLiveSessionHost() {
       setError(null)
       try {
         const code = await peer.startHost()
-        if (cancelled) return
+        if (cancelled) {
+          peer.destroy()
+          return
+        }
 
         const orchestrator = createHostOrchestrator(peer)
-        orchestratorRef.current = orchestrator
         orchestrator.start()
+
+        // Store peer and cleanup function in zustand
+        useLiveSessionStore.getState().setPeerService(peer, () => {
+          orchestrator.destroy()
+          peer.destroy()
+        })
 
         peer.on('connection-error', async () => {
           if (cancelled) return
@@ -93,8 +99,7 @@ export function useLiveSessionHost() {
 
     return () => {
       cancelled = true
-      orchestratorRef.current?.destroy()
-      peer.destroy()
+      // Don't destroy peer — it's in the store and must survive navigation
     }
   }, [])
 
