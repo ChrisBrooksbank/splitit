@@ -1,7 +1,7 @@
 {
   "name": "splitit",
   "private": true,
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Split restaurant bills fairly — snap a photo, claim your items, and let SplitIt handle the math. Fully offline PWA.",
   "homepage": "https://github.com/ChrisBrooksbank/splitit#readme",
   "repository": {

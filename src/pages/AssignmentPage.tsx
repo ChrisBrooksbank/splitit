@@ -8,7 +8,6 @@ import { useLiveSessionStore } from '../store/liveSessionStore'
 import AssignableItem from '../components/assignment/AssignableItem'
 import HandoffScreen from '../components/assignment/HandoffScreen'
 import SharedItemSplitter from '../components/assignment/SharedItemSplitter'
-import HostLiveAssignmentView from '../components/liveSession/HostLiveAssignmentView'
 import StepIndicator from '../components/layout/StepIndicator'
 import type { LineItem, Person } from '../types'
 
@@ -20,7 +19,7 @@ export default function AssignmentPage() {
   const { lineItems } = useBillStore()
   const { assignments, portions, toggleAssignment, setAssignees, setPortions, clearPortions } =
     useAssignmentStore()
-  const { isLive, role, advancePhaseFn } = useLiveSessionStore()
+  const { isLive, role, advancePhaseFn, guests } = useLiveSessionStore()
 
   // Flexible order: track who has finished their turn, and who is currently claiming
   const [claimedPersonIds, setClaimedPersonIds] = useState<string[]>([])
@@ -95,6 +94,7 @@ export default function AssignmentPage() {
         setClaimedPersonIds(claimedPersonIds)
         return
       }
+      if (isLive && role === 'host') advancePhaseFn?.('tips')
       navigate('/tips')
     } else {
       setStep('handoff')
@@ -111,22 +111,15 @@ export default function AssignmentPage() {
       // Shouldn't happen — button is hidden when items are unassigned
       return
     }
+    if (isLive && role === 'host') advancePhaseFn?.('tips')
     navigate('/tips')
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  // Live session host view
-  if (isLive && role === 'host') {
-    return (
-      <HostLiveAssignmentView
-        onAdvanceToTips={() => {
-          advancePhaseFn?.('tips')
-          navigate('/tips')
-        }}
-      />
-    )
-  }
+  // Live session host: use normal claiming flow (host can claim items too)
+  // The HostLiveAssignmentView is no longer used as a standalone — host goes
+  // through the same who-are-you → claiming → handoff flow as offline mode.
 
   if (people.length < 2) {
     return (
@@ -174,6 +167,33 @@ export default function AssignmentPage() {
             Tap your name to start claiming your items.
           </p>
         </div>
+
+        {/* Connected guests (host in live session) */}
+        {isLive && role === 'host' && guests.length > 0 && (
+          <div className="px-4 pb-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+              {guests.filter((g) => g.connected).length} guest
+              {guests.filter((g) => g.connected).length !== 1 ? 's' : ''} connected
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {guests.map((guest) => (
+                <span
+                  key={guest.peerId}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${
+                    guest.connected
+                      ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                      : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${guest.connected ? 'bg-green-500' : 'bg-red-500'}`}
+                  />
+                  {guest.displayName ?? 'Connecting...'}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Person buttons */}
         <div className="flex-1 px-4 flex flex-col gap-3 pb-4">

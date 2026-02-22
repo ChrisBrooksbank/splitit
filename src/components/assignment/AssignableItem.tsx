@@ -42,7 +42,7 @@ export default function AssignableItem({
           : isAssigned
             ? 'bg-gray-50 dark:bg-gray-800 cursor-pointer'
             : isUnassigned
-              ? 'bg-amber-50 border border-amber-200 cursor-pointer'
+              ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 cursor-pointer'
               : 'active:bg-gray-50 dark:active:bg-gray-800 cursor-pointer'
       }`}
       onClick={disabled ? undefined : handleRowClick}
@@ -104,7 +104,9 @@ export default function AssignableItem({
         )}
 
         {isUnassigned && (
-          <span className="text-xs text-amber-600 font-medium mt-0.5 block">Unassigned</span>
+          <span className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5 block">
+            Unassigned
+          </span>
         )}
       </div>
 
