@@ -102,6 +102,9 @@ export function createHostOrchestrator(peerService: RelayService) {
       displayName: null,
       connected: true,
     })
+    // Send current state so the guest can show the "Who are you?" list
+    const payload = buildSyncPayload()
+    peerService.sendToGuest(peerId, { type: 'SYNC_STATE', payload })
   }
 
   const handleGuestDisconnected = (peerId: string) => {
