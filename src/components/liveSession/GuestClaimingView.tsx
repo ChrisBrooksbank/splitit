@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { SyncPayload } from '../../services/liveSession/types'
 import AssignableItem from '../assignment/AssignableItem'
+import RunningTotal from '../assignment/RunningTotal'
 import SharedItemSplitter from '../assignment/SharedItemSplitter'
 
 interface GuestClaimingViewProps {
@@ -24,6 +25,26 @@ export default function GuestClaimingView({
 
   const { lineItems, people, assignments, portions } = syncedState
   const currentPerson = people.find((p) => p.id === myPersonId)
+
+  // Running subtotal for this guest (cents)
+  const guestSubtotal = useMemo(() => {
+    let subtotal = 0
+    for (const item of lineItems) {
+      const assignees = assignments[item.id] ?? []
+      if (!assignees.includes(myPersonId)) continue
+      const itemPortions = portions[item.id]
+      let share: number
+      if (!itemPortions || Object.keys(itemPortions).length === 0) {
+        share = 1 / assignees.length
+      } else {
+        const totalWeight = assignees.reduce((sum, id) => sum + (itemPortions[id] ?? 1), 0)
+        const personWeight = itemPortions[myPersonId] ?? 1
+        share = totalWeight > 0 ? personWeight / totalWeight : 1 / assignees.length
+      }
+      subtotal += Math.round(item.price * item.quantity * share)
+    }
+    return subtotal
+  }, [lineItems, assignments, portions, myPersonId])
 
   if (!currentPerson) return null
 
@@ -69,6 +90,8 @@ export default function GuestClaimingView({
           />
         )
       })}
+
+      <RunningTotal subtotalCents={guestSubtotal} />
 
       {splitterItem && (
         <SharedItemSplitter
