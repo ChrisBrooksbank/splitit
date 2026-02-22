@@ -111,6 +111,14 @@ export function createHostOrchestrator(peerService: RelayService) {
     useLiveSessionStore.getState().disconnectGuest(peerId)
   }
 
+  // Subscribe to store changes so host's own edits broadcast to guests
+  const unsubAssignments = useAssignmentStore.subscribe(() => {
+    debouncedBroadcast()
+  })
+  const unsubTips = useTipStore.subscribe(() => {
+    debouncedBroadcast()
+  })
+
   const start = () => {
     peerService.on('guest-message', handleGuestMessage)
     peerService.on('guest-connected', handleGuestConnected)
@@ -119,6 +127,8 @@ export function createHostOrchestrator(peerService: RelayService) {
 
   const destroy = () => {
     debouncedBroadcast.flush()
+    unsubAssignments()
+    unsubTips()
     peerService.off('guest-message', handleGuestMessage)
     peerService.off('guest-connected', handleGuestConnected)
     peerService.off('guest-disconnected', handleGuestDisconnected)
