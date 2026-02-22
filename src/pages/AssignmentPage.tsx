@@ -7,6 +7,7 @@ import { useAssignmentStore } from '../store/assignmentStore'
 import { useLiveSessionStore } from '../store/liveSessionStore'
 import AssignableItem from '../components/assignment/AssignableItem'
 import HandoffScreen from '../components/assignment/HandoffScreen'
+import RunningTotal from '../components/assignment/RunningTotal'
 import SharedItemSplitter from '../components/assignment/SharedItemSplitter'
 import StepIndicator from '../components/layout/StepIndicator'
 import ShareSessionQRModal from '../components/liveSession/ShareSessionQRModal'
@@ -45,6 +46,20 @@ export default function AssignmentPage() {
     () => lineItems.filter((item) => (assignments[item.id] ?? []).length === 0),
     [lineItems, assignments]
   )
+
+  // Running subtotal for the current person (cents)
+  const currentPersonSubtotal = useMemo(() => {
+    if (!currentPersonId) return 0
+    const { getPersonShare } = useAssignmentStore.getState()
+    let subtotal = 0
+    for (const item of lineItems) {
+      const share = getPersonShare(item.id, currentPersonId)
+      if (share > 0) {
+        subtotal += Math.round(item.price * item.quantity * share)
+      }
+    }
+    return subtotal
+  }, [currentPersonId, lineItems, assignments, portions])
 
   // For each item, get list of Person objects assigned
   function getAssignees(item: LineItem): Person[] {
@@ -357,6 +372,9 @@ export default function AssignmentPage() {
           )
         })}
       </div>
+
+      {/* Running total */}
+      <RunningTotal subtotalCents={currentPersonSubtotal} />
 
       {/* Footer — always "I'm Done" */}
       <div className="px-4 pb-8 pt-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
