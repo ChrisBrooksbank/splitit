@@ -13,15 +13,19 @@ interface Room {
 
 const rooms = new Map<string, Room>()
 
-const ROOM_CODE_LENGTH = 6
+const ROOM_CODE_LENGTH = 8
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000 // 2 hours
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
+const MAX_JOIN_FAILURES = 5 // per-connection limit before disconnect
+const JOIN_FAILURE_WINDOW_MS = 60_000 // sliding window for rate limiting
 
 function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no I/O/0/1 for readability
+  const randomBytes = new Uint8Array(ROOM_CODE_LENGTH)
+  crypto.getRandomValues(randomBytes)
   let code = ''
   for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)]
+    code += chars[randomBytes[i] % chars.length]
   }
   return code
 }
@@ -45,6 +49,24 @@ function send(ws: WebSocket, msg: Record<string, unknown>): void {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg))
   }
+}
+
+// Track failed join attempts per connection to prevent room code enumeration
+const joinFailures: { timestamp: number; ws: WebSocket }[] = []
+
+function checkJoinRateLimit(ws: WebSocket): boolean {
+  const now = Date.now()
+  // Prune old entries outside the window
+  while (joinFailures.length > 0 && now - joinFailures[0].timestamp > JOIN_FAILURE_WINDOW_MS) {
+    joinFailures.shift()
+  }
+  // Count failures for this specific WebSocket connection
+  const failures = joinFailures.filter((f) => f.ws === ws).length
+  return failures < MAX_JOIN_FAILURES
+}
+
+function recordJoinFailure(ws: WebSocket): void {
+  joinFailures.push({ timestamp: Date.now(), ws })
 }
 
 function handleSocket(ws: WebSocket): void {
@@ -87,9 +109,15 @@ function handleSocket(ws: WebSocket): void {
           send(ws, { type: 'ERROR', message: 'Already in a room' })
           return
         }
+        if (!checkJoinRateLimit(ws)) {
+          send(ws, { type: 'ERROR', message: 'Too many attempts. Please try again later.' })
+          ws.close()
+          return
+        }
         const code = msg.roomCode as string
         const room = rooms.get(code)
         if (!room) {
+          recordJoinFailure(ws)
           send(ws, { type: 'ERROR', message: 'Room not found' })
           return
         }
