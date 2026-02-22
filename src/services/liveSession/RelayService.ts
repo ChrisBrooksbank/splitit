@@ -146,6 +146,7 @@ export class RelayService {
         () => {
           clearTimeout(timeout)
           ac.abort()
+          reject(new Error('Connection closed before room was created'))
         },
         { signal: ac.signal }
       )
@@ -297,6 +298,7 @@ export class RelayService {
         () => {
           clearTimeout(timeout)
           ac.abort()
+          reject(new Error('Connection closed before joining room'))
         },
         { signal: ac.signal }
       )
