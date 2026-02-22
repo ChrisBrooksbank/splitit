@@ -96,6 +96,10 @@ export default function AssignmentPage() {
       }
       if (isLive && role === 'host') advancePhaseFn?.('tips')
       navigate('/tips')
+    } else if (isLive && role === 'host') {
+      // Host doesn't pass the phone — skip handoff, go straight to next person
+      setCurrentPersonId(null)
+      setStep('who-are-you')
     } else {
       setStep('handoff')
     }
