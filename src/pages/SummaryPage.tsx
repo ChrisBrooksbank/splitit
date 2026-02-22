@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
-import { Copy, PlusCircle, QrCode, Users } from 'lucide-react'
+import { Copy, PlusCircle, QrCode, UserPlus } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -259,9 +259,9 @@ export default function SummaryPage() {
             <button
               onClick={() => setShowQR(true)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Show QR code to invite others"
+              aria-label="Show join QR code to invite others"
             >
-              <Users size={18} className="text-gray-500 dark:text-gray-400" />
+              <UserPlus size={18} className="text-gray-500 dark:text-gray-400" />
             </button>
           )}
         </div>
@@ -315,14 +315,16 @@ export default function SummaryPage() {
           <Copy size={18} className="inline -mt-0.5 mr-1.5" />
           Copy Summary
         </button>
-        <button
-          onClick={() => navigate('/share')}
-          className="w-full py-3 px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-base font-medium rounded-2xl active:scale-95 transition-transform"
-          aria-label="Share bill via QR code"
-        >
-          <QrCode size={18} className="inline -mt-0.5 mr-1.5" />
-          Share via QR
-        </button>
+        {!isLive && (
+          <button
+            onClick={() => navigate('/share')}
+            className="w-full py-3 px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-base font-medium rounded-2xl active:scale-95 transition-transform"
+            aria-label="Share bill via QR code"
+          >
+            <QrCode size={18} className="inline -mt-0.5 mr-1.5" />
+            Share via QR
+          </button>
+        )}
         <button
           onClick={handleStartNewBill}
           className="w-full py-3 px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-base font-medium rounded-2xl active:scale-95 transition-transform"
