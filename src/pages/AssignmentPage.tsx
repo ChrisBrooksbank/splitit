@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, Users } from 'lucide-react'
+import { CheckCircle2, Users, QrCode } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -9,6 +9,7 @@ import AssignableItem from '../components/assignment/AssignableItem'
 import HandoffScreen from '../components/assignment/HandoffScreen'
 import SharedItemSplitter from '../components/assignment/SharedItemSplitter'
 import StepIndicator from '../components/layout/StepIndicator'
+import ShareSessionQRModal from '../components/liveSession/ShareSessionQRModal'
 import type { LineItem, Person } from '../types'
 
 type Step = 'who-are-you' | 'claiming' | 'handoff'
@@ -19,7 +20,7 @@ export default function AssignmentPage() {
   const { lineItems } = useBillStore()
   const { assignments, portions, toggleAssignment, setAssignees, setPortions, clearPortions } =
     useAssignmentStore()
-  const { isLive, role, advancePhaseFn, guests } = useLiveSessionStore()
+  const { isLive, role, advancePhaseFn, guests, roomCode } = useLiveSessionStore()
 
   // Flexible order: track who has finished their turn, and who is currently claiming
   const [claimedPersonIds, setClaimedPersonIds] = useState<string[]>([])
@@ -27,6 +28,9 @@ export default function AssignmentPage() {
   const [step, setStep] = useState<Step>('who-are-you')
   const [splitterItemId, setSplitterItemId] = useState<string | null>(null)
   const [showUnassignedWarning, setShowUnassignedWarning] = useState(false)
+  const [showQR, setShowQR] = useState(false)
+
+  const joinUrl = roomCode ? `${window.location.origin}/join/${roomCode}` : ''
 
   const currentPerson: Person | undefined = people.find((p) => p.id === currentPersonId)
 
@@ -202,6 +206,20 @@ export default function AssignmentPage() {
           </div>
         )}
 
+        {/* Invite others QR button (host in live session) */}
+        {isLive && role === 'host' && roomCode && (
+          <div className="px-4 pb-4">
+            <button
+              onClick={() => setShowQR(true)}
+              className="w-full py-2.5 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl active:scale-95 transition-transform"
+              aria-label="Show QR code to invite others"
+            >
+              <QrCode size={16} className="inline -mt-0.5 mr-1.5" />
+              Invite Others
+            </button>
+          </div>
+        )}
+
         {/* Person buttons */}
         <div className="flex-1 px-4 flex flex-col gap-3 pb-4">
           {remainingPeople.map((person) => (
@@ -248,6 +266,10 @@ export default function AssignmentPage() {
             )
           })}
         </div>
+
+        {showQR && joinUrl && (
+          <ShareSessionQRModal joinUrl={joinUrl} onClose={() => setShowQR(false)} />
+        )}
       </div>
     )
   }
@@ -276,6 +298,15 @@ export default function AssignmentPage() {
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {claimedPersonIds.length + 1} of {people.length}
           </span>
+          {isLive && role === 'host' && roomCode && (
+            <button
+              onClick={() => setShowQR(true)}
+              className="ml-auto p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Show QR code to invite others"
+            >
+              <QrCode size={18} className="text-gray-500 dark:text-gray-400" />
+            </button>
+          )}
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           {currentPerson.name}'s items
@@ -349,6 +380,10 @@ export default function AssignmentPage() {
           onConfirm={handleSplitterConfirm}
           onClose={() => setSplitterItemId(null)}
         />
+      )}
+
+      {showQR && joinUrl && (
+        <ShareSessionQRModal joinUrl={joinUrl} onClose={() => setShowQR(false)} />
       )}
     </div>
   )

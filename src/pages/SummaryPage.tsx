@@ -1,16 +1,18 @@
-import { memo, useEffect, useMemo, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
-import { Copy, PlusCircle, QrCode } from 'lucide-react'
+import { Copy, PlusCircle, QrCode, Users } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
 import { useTipStore } from '../store/tipStore'
 import { useHistoryStore } from '../store/historyStore'
+import { useLiveSessionStore } from '../store/liveSessionStore'
 import { calculateSplit } from '../services/calculator/splitCalculator'
 import { formatCurrency } from '../utils/formatCurrency'
 import { consumeReceiptPhotos } from '../utils/photoThumbnail'
 import StepIndicator from '../components/layout/StepIndicator'
+import ShareSessionQRModal from '../components/liveSession/ShareSessionQRModal'
 import type { Person, LineItem, PersonTotal } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -139,6 +141,10 @@ export default function SummaryPage() {
   const { assignments, portions } = useAssignmentStore()
   const { personTips } = useTipStore()
   const { saveSession } = useHistoryStore()
+  const { isLive, role, roomCode } = useLiveSessionStore()
+  const [showQR, setShowQR] = useState(false)
+
+  const joinUrl = roomCode ? `${window.location.origin}/join/${roomCode}` : ''
 
   const savedRef = useRef(false)
 
@@ -245,9 +251,20 @@ export default function SummaryPage() {
 
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 px-4 pt-2 pb-4 border-b border-gray-100 dark:border-gray-700">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-          Summary
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+            Summary
+          </h1>
+          {isLive && role === 'host' && roomCode && (
+            <button
+              onClick={() => setShowQR(true)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Show QR code to invite others"
+            >
+              <Users size={18} className="text-gray-500 dark:text-gray-400" />
+            </button>
+          )}
+        </div>
         <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
           Here's what everyone owes.
         </p>
@@ -315,6 +332,10 @@ export default function SummaryPage() {
           Start New Bill
         </button>
       </div>
+
+      {showQR && joinUrl && (
+        <ShareSessionQRModal joinUrl={joinUrl} onClose={() => setShowQR(false)} />
+      )}
     </div>
   )
 }

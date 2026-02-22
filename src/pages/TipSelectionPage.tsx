@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Percent, ArrowRight } from 'lucide-react'
+import { useState } from 'react'
+import { Users, Percent, ArrowRight, QrCode } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -8,6 +9,7 @@ import { useTipStore } from '../store/tipStore'
 import { useLiveSessionStore } from '../store/liveSessionStore'
 import PersonTipCard from '../components/tip/PersonTipCard'
 import StepIndicator from '../components/layout/StepIndicator'
+import ShareSessionQRModal from '../components/liveSession/ShareSessionQRModal'
 
 /**
  * Calculate each person's pre-tip subtotal (items only).
@@ -57,7 +59,10 @@ export default function TipSelectionPage() {
     }
   }, [people, initializeTips])
 
-  const { isLive, role, advancePhaseFn } = useLiveSessionStore()
+  const { isLive, role, advancePhaseFn, roomCode } = useLiveSessionStore()
+  const [showQR, setShowQR] = useState(false)
+
+  const joinUrl = roomCode ? `${window.location.origin}/join/${roomCode}` : ''
 
   function handleCalculate() {
     if (isLive && role === 'host') {
@@ -93,9 +98,20 @@ export default function TipSelectionPage() {
 
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 px-4 pt-2 pb-4 border-b border-gray-100 dark:border-gray-700">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-          Tip
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+            Tip
+          </h1>
+          {isLive && role === 'host' && roomCode && (
+            <button
+              onClick={() => setShowQR(true)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Show QR code to invite others"
+            >
+              <QrCode size={18} className="text-gray-500 dark:text-gray-400" />
+            </button>
+          )}
+        </div>
         <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
           Each person picks their own tip.
         </p>
@@ -200,6 +216,10 @@ export default function TipSelectionPage() {
           Calculate Final Split <ArrowRight size={18} className="inline -mt-0.5 ml-1" />
         </button>
       </div>
+
+      {showQR && joinUrl && (
+        <ShareSessionQRModal joinUrl={joinUrl} onClose={() => setShowQR(false)} />
+      )}
     </div>
   )
 }

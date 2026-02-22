@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Wifi, RefreshCw } from 'lucide-react'
+import { Wifi, RefreshCw, QrCode } from 'lucide-react'
 import { useLiveSessionGuest } from '../hooks/useLiveSessionGuest'
 import GuestClaimingView from '../components/liveSession/GuestClaimingView'
 import GuestTipView from '../components/liveSession/GuestTipView'
 import GuestSummaryView from '../components/liveSession/GuestSummaryView'
+import ShareSessionQRModal from '../components/liveSession/ShareSessionQRModal'
 
 export default function JoinPage() {
   const { roomCode } = useParams<{ roomCode: string }>()
@@ -20,6 +22,9 @@ export default function JoinPage() {
     sendSetAssignees,
     sendTip,
   } = useLiveSessionGuest(roomCode ?? '')
+
+  const [showQR, setShowQR] = useState(false)
+  const joinUrl = roomCode ? `${window.location.origin}/join/${roomCode}` : ''
 
   const isReconnecting = connectionStatus === 'reconnecting'
 
@@ -167,6 +172,23 @@ export default function JoinPage() {
     </div>
   ) : null
 
+  // Invite button shown in all guest phase views
+  const inviteButton = joinUrl ? (
+    <button
+      onClick={() => setShowQR(true)}
+      className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg active:scale-95 transition-transform"
+      aria-label="Show QR code to invite others"
+    >
+      <QrCode size={14} />
+      Invite Others
+    </button>
+  ) : null
+
+  const qrModal =
+    showQR && joinUrl ? (
+      <ShareSessionQRModal joinUrl={joinUrl} onClose={() => setShowQR(false)} />
+    ) : null
+
   // Phase-based views
   if (phase === 'claiming' || phase === 'lobby') {
     return (
@@ -178,17 +200,22 @@ export default function JoinPage() {
             <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
               Waiting for host to start...
             </p>
+            <div className="mt-4">{inviteButton}</div>
           </div>
         ) : (
-          <GuestClaimingView
-            syncedState={syncedState}
-            myPersonId={myPersonId}
-            onClaim={sendClaim}
-            onUnclaim={sendUnclaim}
-            onSetAssignees={sendSetAssignees}
-            disabled={!isConnected}
-          />
+          <>
+            <div className="flex justify-end mb-2">{inviteButton}</div>
+            <GuestClaimingView
+              syncedState={syncedState}
+              myPersonId={myPersonId}
+              onClaim={sendClaim}
+              onUnclaim={sendUnclaim}
+              onSetAssignees={sendSetAssignees}
+              disabled={!isConnected}
+            />
+          </>
         )}
+        {qrModal}
       </div>
     )
   }
@@ -197,12 +224,14 @@ export default function JoinPage() {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 px-4 pt-4 pb-8">
         {reconnectingBanner}
+        <div className="flex justify-end mb-2">{inviteButton}</div>
         <GuestTipView
           syncedState={syncedState}
           myPersonId={myPersonId}
           onSetTip={sendTip}
           disabled={!isConnected}
         />
+        {qrModal}
       </div>
     )
   }
@@ -211,7 +240,9 @@ export default function JoinPage() {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 px-4 pt-4 pb-8">
         {reconnectingBanner}
+        <div className="flex justify-end mb-2">{inviteButton}</div>
         <GuestSummaryView syncedState={syncedState} myPersonId={myPersonId} />
+        {qrModal}
       </div>
     )
   }
