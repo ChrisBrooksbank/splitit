@@ -62,6 +62,16 @@ export async function recognize(
 }
 
 /**
+ * Pre-initialize the Tesseract worker during idle time.
+ * Call from App.tsx via requestIdleCallback after mount.
+ */
+export function preloadWorker(): void {
+  getWorker().catch(() => {
+    // Preload failed silently — will retry on first recognize() call
+  })
+}
+
+/**
  * Terminate the singleton worker and reset state.
  * Useful for cleanup in tests or when the user navigates away.
  */

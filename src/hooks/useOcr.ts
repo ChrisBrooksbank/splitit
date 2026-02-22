@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { preprocessImage } from '../services/ocr/imagePreprocessor'
-import { recognize } from '../services/ocr/tesseractService'
+import { recognize, terminateWorker } from '../services/ocr/tesseractService'
 
 export type OcrStage = 'idle' | 'preprocessing' | 'loading' | 'processing' | 'extracting' | 'done'
 
@@ -61,6 +61,8 @@ export function useOcr(): UseOcrReturn {
       })
 
       setState({ stage: 'done', progress: 1, result: text, error: null })
+      // Free Tesseract memory now that OCR is complete
+      terminateWorker().catch(() => {})
       return text
     } catch (err) {
       const message = err instanceof Error ? err.message : 'OCR failed'

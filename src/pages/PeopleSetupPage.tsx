@@ -10,10 +10,13 @@ export default function PeopleSetupPage() {
   const { people, addPerson, updatePerson, removePerson } = usePeopleStore()
 
   const [inputValue, setInputValue] = useState('')
+  const [inputTouched, setInputTouched] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const editRef = useRef<HTMLInputElement>(null)
+
+  const nameError = inputTouched && !inputValue.trim() ? 'Name is required' : null
 
   // Focus add-name input on mount
   useEffect(() => {
@@ -29,9 +32,13 @@ export default function PeopleSetupPage() {
 
   function handleAdd() {
     const name = inputValue.trim()
-    if (!name) return
+    if (!name) {
+      setInputTouched(true)
+      return
+    }
     addPerson(name)
     setInputValue('')
+    setInputTouched(false)
     inputRef.current?.focus()
   }
 
@@ -91,17 +98,29 @@ export default function PeopleSetupPage() {
       <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-4">
         {/* Add person input */}
         <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleInputKeyDown}
-            placeholder="Name"
-            aria-label="Person's name"
-            maxLength={40}
-            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent"
-          />
+          <div className="flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onBlur={() => {
+                if (inputValue) setInputTouched(true)
+              }}
+              onKeyDown={handleInputKeyDown}
+              placeholder="Name"
+              aria-label="Person's name"
+              aria-invalid={nameError ? true : undefined}
+              aria-describedby={nameError ? 'person-name-error' : undefined}
+              maxLength={40}
+              className={`w-full px-4 py-3 rounded-xl border text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent ${nameError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-600'}`}
+            />
+            {nameError && (
+              <p id="person-name-error" className="mt-1 text-xs text-red-500 dark:text-red-400">
+                {nameError}
+              </p>
+            )}
+          </div>
           <button
             onClick={handleAdd}
             disabled={!inputValue.trim()}

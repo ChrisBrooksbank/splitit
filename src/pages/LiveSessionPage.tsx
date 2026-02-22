@@ -11,6 +11,8 @@ export default function LiveSessionPage() {
   const identifiedGuests = guests.filter((g) => g.personId !== null && g.connected)
   const canStart = identifiedGuests.length >= 1
 
+  const connectedCount = guests.filter((g) => g.connected).length
+
   const joinUrl = roomCode ? `${window.location.origin}/join/${roomCode}` : ''
 
   function handleStart() {
@@ -89,6 +91,11 @@ export default function LiveSessionPage() {
             </div>
           </div>
         )}
+
+        {/* Aria-live region for guest connection announcements */}
+        <span className="sr-only" aria-live="polite">
+          {connectedCount} {connectedCount === 1 ? 'guest' : 'guests'} connected
+        </span>
 
         {/* Connected guests */}
         <div className="w-full max-w-sm mb-6">

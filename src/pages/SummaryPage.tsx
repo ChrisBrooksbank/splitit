@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
 import { Copy, PlusCircle, QrCode } from 'lucide-react'
@@ -23,7 +23,11 @@ interface PersonSummaryCardProps {
   items: { item: LineItem; shareCount: number }[]
 }
 
-function PersonSummaryCard({ person, personTotal, items }: PersonSummaryCardProps) {
+const PersonSummaryCard = memo(function PersonSummaryCard({
+  person,
+  personTotal,
+  items,
+}: PersonSummaryCardProps) {
   const { subtotal, tipAmount, tipPercentage, total } = personTotal
 
   return (
@@ -84,7 +88,7 @@ function PersonSummaryCard({ person, personTotal, items }: PersonSummaryCardProp
       </div>
     </div>
   )
-}
+})
 
 // ---------------------------------------------------------------------------
 // Copy summary text builder

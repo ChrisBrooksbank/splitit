@@ -12,6 +12,7 @@ vi.mock('../../src/services/ocr/imagePreprocessor', () => ({
 
 vi.mock('../../src/services/ocr/tesseractService', () => ({
   recognize: vi.fn(),
+  terminateWorker: vi.fn().mockResolvedValue(undefined),
 }))
 
 import { preprocessImage } from '../../src/services/ocr/imagePreprocessor'

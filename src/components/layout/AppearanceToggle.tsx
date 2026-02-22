@@ -72,7 +72,7 @@ export default function AppearanceToggle() {
         aria-label="Decrease font size"
         disabled={fontSize <= 14}
         onClick={() => setFontSize(fontSize - 2)}
-        className="flex items-center justify-center w-8 h-8 rounded-md transition-colors text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
+        className="flex items-center justify-center w-8 h-8 rounded-md transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
         style={{ fontSize: '14px' }}
       >
         A&minus;
@@ -81,7 +81,7 @@ export default function AppearanceToggle() {
         aria-label="Increase font size"
         disabled={fontSize >= 20}
         onClick={() => setFontSize(fontSize + 2)}
-        className="flex items-center justify-center w-8 h-8 rounded-md transition-colors text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
+        className="flex items-center justify-center w-8 h-8 rounded-md transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
         style={{ fontSize: '14px' }}
       >
         A+
@@ -103,7 +103,7 @@ export default function AppearanceToggle() {
                 'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
                 isActive
                   ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300',
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
               ].join(' ')}
             >
               {opt.icon}

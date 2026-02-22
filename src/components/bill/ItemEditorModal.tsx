@@ -30,7 +30,18 @@ export default function ItemEditorModal({
   const [name, setName] = useState(initialName)
   const [price, setPrice] = useState(initialPrice)
   const [qty, setQty] = useState(initialQty)
+  const [touched, setTouched] = useState({ name: false, price: false, qty: false })
   const nameRef = useRef<HTMLInputElement>(null)
+
+  const nameError = touched.name && !name.trim() ? 'Item name is required' : null
+  const priceError =
+    touched.price && (price === '' || isNaN(parseFloat(price)) || parseFloat(price) < 0)
+      ? 'Enter a valid price'
+      : null
+  const qtyError =
+    touched.qty && (qty === '' || isNaN(parseInt(qty, 10)) || parseInt(qty, 10) < 1)
+      ? 'Quantity must be at least 1'
+      : null
 
   useEffect(() => {
     nameRef.current?.focus()
@@ -47,6 +58,7 @@ export default function ItemEditorModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setTouched({ name: true, price: true, qty: true })
     const trimmedName = name.trim()
     if (!trimmedName) return
     const parsedPrice = Math.round(parseFloat(price) * 100)
@@ -106,10 +118,18 @@ export default function ItemEditorModal({
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
             placeholder="e.g. Margherita Pizza"
             maxLength={100}
-            className="w-full px-4 py-3 text-lg text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent"
+            aria-invalid={nameError ? true : undefined}
+            aria-describedby={nameError ? 'item-name-error' : undefined}
+            className={`w-full px-4 py-3 text-lg text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl border placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent ${nameError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-600'}`}
           />
+          {nameError && (
+            <p id="item-name-error" className="mt-1 text-xs text-red-500 dark:text-red-400">
+              {nameError}
+            </p>
+          )}
         </div>
 
         {/* Price and Quantity row */}
@@ -134,10 +154,18 @@ export default function ItemEditorModal({
                 step="0.01"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
+                onBlur={() => setTouched((t) => ({ ...t, price: true }))}
                 placeholder="0.00"
-                className="w-full pl-9 pr-4 py-3 text-lg text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent"
+                aria-invalid={priceError ? true : undefined}
+                aria-describedby={priceError ? 'item-price-error' : undefined}
+                className={`w-full pl-9 pr-4 py-3 text-lg text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl border placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent ${priceError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-600'}`}
               />
             </div>
+            {priceError && (
+              <p id="item-price-error" className="mt-1 text-xs text-red-500 dark:text-red-400">
+                {priceError}
+              </p>
+            )}
           </div>
 
           {/* Quantity */}
@@ -155,8 +183,16 @@ export default function ItemEditorModal({
               min="1"
               value={qty}
               onChange={(e) => setQty(e.target.value)}
-              className="w-full px-4 py-3 text-lg text-center text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent"
+              onBlur={() => setTouched((t) => ({ ...t, qty: true }))}
+              aria-invalid={qtyError ? true : undefined}
+              aria-describedby={qtyError ? 'item-qty-error' : undefined}
+              className={`w-full px-4 py-3 text-lg text-center text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 rounded-xl border focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent ${qtyError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-600'}`}
             />
+            {qtyError && (
+              <p id="item-qty-error" className="mt-1 text-xs text-red-500 dark:text-red-400">
+                {qtyError}
+              </p>
+            )}
           </div>
         </div>
 

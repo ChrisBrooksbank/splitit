@@ -2,9 +2,48 @@
  * Image preprocessing pipeline for OCR.
  * Steps: resize → grayscale → contrast stretch → Otsu binarization
  * All operations use the Canvas API (no external dependencies).
+ * Pixel manipulation is offloaded to a Web Worker when available.
  */
 
 const MAX_DIMENSION = 2000
+
+/**
+ * Run pixel manipulation in a Web Worker if available, otherwise on main thread.
+ */
+async function processPixels(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number
+): Promise<Uint8ClampedArray> {
+  if (typeof Worker !== 'undefined') {
+    try {
+      const worker = new Worker(new URL('./imagePreprocessor.worker.ts', import.meta.url), {
+        type: 'module',
+      })
+      return await new Promise<Uint8ClampedArray>((resolve, reject) => {
+        worker.onmessage = (e: MessageEvent<{ pixels: Uint8ClampedArray }>) => {
+          worker.terminate()
+          resolve(e.data.pixels)
+        }
+        worker.onerror = (err) => {
+          worker.terminate()
+          reject(err)
+        }
+        worker.postMessage({ pixels, width, height }, [pixels.buffer])
+      })
+    } catch {
+      // Worker failed — fall through to main-thread processing
+    }
+  }
+
+  // Main-thread fallback
+  const numPixels = width * height
+  toGrayscale(pixels)
+  contrastStretch(pixels, numPixels)
+  sharpen(pixels, width, height)
+  otsuBinarize(pixels, numPixels)
+  return pixels
+}
 
 /**
  * Preprocess an image file for optimal OCR accuracy.
@@ -23,21 +62,14 @@ export async function preprocessImage(file: File): Promise<Blob> {
   bitmap.close()
 
   const imageData = ctx.getImageData(0, 0, width, height)
-  const pixels = imageData.data // Uint8ClampedArray, RGBA
 
-  // Step 2: Convert to grayscale using luminance formula (in-place, channel 0)
-  toGrayscale(pixels)
-
-  // Step 3: Contrast stretch (histogram stretching)
-  contrastStretch(pixels, width * height)
-
-  // Step 4: Sharpen (3x3 Laplacian kernel)
-  sharpen(pixels, width, height)
-
-  // Step 5: Otsu binarization
-  otsuBinarize(pixels, width * height)
+  // Steps 2-5: pixel manipulation (Web Worker or main thread)
+  const processed = await processPixels(imageData.data, width, height)
 
   // Write back and export
+  if (processed !== imageData.data) {
+    imageData.data.set(processed)
+  }
   ctx.putImageData(imageData, 0, 0)
   return canvasToBlob(canvas)
 }

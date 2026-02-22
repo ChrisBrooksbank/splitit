@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import type { LineItem, Person } from '../../types'
 import { formatCurrency } from '../../utils/formatCurrency'
 
@@ -97,19 +97,23 @@ export default function SharedItemSplitter({
     onConfirm(personIds, portionResult)
   }
 
-  function getEvenShare(): string {
+  const evenShare = useMemo(() => {
     if (selectedArray.length === 0) return formatCurrency(0)
     return formatCurrency(Math.round(totalPrice / selectedArray.length))
-  }
+  }, [selectedArray.length, totalPrice])
 
-  function getCustomShare(personId: string): string {
-    if (selectedArray.length === 0) return formatCurrency(0)
+  const customShares = useMemo(() => {
+    if (selectedArray.length === 0) return {} as Record<string, string>
     const totalWeight = selectedArray.reduce((sum, id) => sum + (portions[id] ?? 1), 0)
-    const personWeight = portions[personId] ?? 1
-    return formatCurrency(
-      totalWeight > 0 ? Math.round((totalPrice * personWeight) / totalWeight) : 0
-    )
-  }
+    const result: Record<string, string> = {}
+    for (const id of selectedArray) {
+      const personWeight = portions[id] ?? 1
+      result[id] = formatCurrency(
+        totalWeight > 0 ? Math.round((totalPrice * personWeight) / totalWeight) : 0
+      )
+    }
+    return result
+  }, [selectedArray, portions, totalPrice])
 
   return (
     // Backdrop
@@ -126,7 +130,7 @@ export default function SharedItemSplitter({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="relative w-full bg-white dark:bg-gray-900 rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col focus:outline-none"
+        className="relative w-full bg-white dark:bg-gray-900 rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col"
         onKeyDown={handleKeyDown}
       >
         {/* Handle bar */}
@@ -224,7 +228,7 @@ export default function SharedItemSplitter({
                         aria-label={`${person.name} portion count`}
                       />
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {getCustomShare(person.id)}
+                        {customShares[person.id] ?? formatCurrency(0)}
                       </span>
                     </div>
                   )}
@@ -233,7 +237,7 @@ export default function SharedItemSplitter({
                 {/* Share amount (even split mode) */}
                 {!useCustom && isChecked && (
                   <span className="flex-shrink-0 text-sm text-gray-500 dark:text-gray-400">
-                    {getEvenShare()}
+                    {evenShare}
                   </span>
                 )}
               </div>

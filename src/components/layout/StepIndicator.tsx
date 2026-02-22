@@ -42,7 +42,7 @@ export default function StepIndicator({ currentRoute }: StepIndicatorProps) {
                     ? 'text-gray-900 dark:text-gray-100'
                     : isCurrent
                       ? 'text-gray-900 dark:text-gray-100'
-                      : 'text-gray-300 dark:text-gray-600',
+                      : 'text-gray-500 dark:text-gray-400',
                 ].join(' ')}
                 aria-hidden="true"
               />
@@ -53,7 +53,7 @@ export default function StepIndicator({ currentRoute }: StepIndicatorProps) {
                     ? 'text-gray-900 dark:text-gray-100'
                     : isCompleted
                       ? 'text-gray-500 dark:text-gray-400'
-                      : 'text-gray-300 dark:text-gray-600',
+                      : 'text-gray-500 dark:text-gray-400',
                 ].join(' ')}
                 aria-current={isCurrent ? 'step' : undefined}
               >

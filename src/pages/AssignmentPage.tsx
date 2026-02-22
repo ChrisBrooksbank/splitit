@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, Users } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
@@ -58,14 +58,17 @@ export default function AssignmentPage() {
 
   // ── Step: Item claiming ───────────────────────────────────────────────────
 
-  function handleToggle(itemId: string) {
-    if (!currentPerson) return
-    toggleAssignment(itemId, currentPerson.id)
-  }
+  const handleToggle = useCallback(
+    (itemId: string) => {
+      if (!currentPerson) return
+      toggleAssignment(itemId, currentPerson.id)
+    },
+    [currentPerson, toggleAssignment]
+  )
 
-  function handleShareClick(itemId: string) {
+  const handleShareClick = useCallback((itemId: string) => {
     setSplitterItemId(itemId)
-  }
+  }, [])
 
   function handleSplitterConfirm(personIds: string[], portionResult: Record<string, number>) {
     if (!splitterItemId) return

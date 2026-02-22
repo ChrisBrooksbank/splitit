@@ -85,7 +85,7 @@ export default function TipSelector({
       </div>
 
       {/* Real-time tip amount */}
-      <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+      <p className="text-center text-sm text-gray-500 dark:text-gray-400" aria-live="polite">
         Tip:{' '}
         <span className="font-semibold text-gray-900 dark:text-gray-100">
           {formatCurrency(tipAmountCents)}

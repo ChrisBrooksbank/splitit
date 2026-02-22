@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import type { LineItem } from '../../types'
 import { formatCurrency } from '../../utils/formatCurrency'
 import ItemEditorModal from './ItemEditorModal'
@@ -11,7 +11,7 @@ interface LineItemRowProps {
 
 const LOW_CONFIDENCE_THRESHOLD = 0.7
 
-export default function LineItemRow({ item, onUpdate, onDelete }: LineItemRowProps) {
+export default memo(function LineItemRow({ item, onUpdate, onDelete }: LineItemRowProps) {
   const [editing, setEditing] = useState(false)
 
   const isLowConfidence = !item.manuallyEdited && item.confidence < LOW_CONFIDENCE_THRESHOLD
@@ -106,4 +106,4 @@ export default function LineItemRow({ item, onUpdate, onDelete }: LineItemRowPro
       )}
     </>
   )
-}
+})

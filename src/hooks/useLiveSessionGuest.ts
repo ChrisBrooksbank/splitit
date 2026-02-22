@@ -23,6 +23,8 @@ export function useLiveSessionGuest(roomCode: string) {
     if (useLiveSessionStore.getState().peerService) return
 
     let cancelled = false
+    let reconnectCount = 0
+    const MAX_RECONNECT_ATTEMPTS = 5
     const peer = new RelayService()
 
     peer.on('status-change', (msg) => {
@@ -31,14 +33,24 @@ export function useLiveSessionGuest(roomCode: string) {
 
     const attemptReconnect = async () => {
       if (cancelled) return
+
+      reconnectCount++
+      if (reconnectCount > MAX_RECONNECT_ATTEMPTS) {
+        setConnectionStatus('error')
+        setStatusMessage('Host disconnected')
+        useLiveSessionStore.getState().setConnectionStatus('error')
+        return
+      }
+
       setConnectionStatus('reconnecting')
       useLiveSessionStore.getState().setConnectionStatus('reconnecting')
-      setStatusMessage('Reconnecting...')
+      setStatusMessage(`Reconnecting... (${reconnectCount}/${MAX_RECONNECT_ATTEMPTS})`)
 
       try {
         const didReconnect = await peer.reconnectToHost(roomCode)
         if (cancelled || !didReconnect) return
 
+        reconnectCount = 0
         setConnectionStatus('connected')
         setStatusMessage(null)
         useLiveSessionStore.getState().setConnectionStatus('connected')

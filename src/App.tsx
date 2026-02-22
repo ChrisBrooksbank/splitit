@@ -1,9 +1,11 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useAppearanceEffect } from './hooks/useAppearanceEffect'
 import { useInstallPrompt } from './hooks/useInstallPrompt'
 import { useSWUpdate } from './hooks/useSWUpdate'
+import { preloadWorker } from './services/ocr/tesseractService'
 import AppearanceToggle from './components/layout/AppearanceToggle'
+import ErrorBoundary from './components/layout/ErrorBoundary'
 import InstallBanner from './components/layout/InstallBanner'
 import UpdateToast from './components/layout/UpdateToast'
 
@@ -60,14 +62,29 @@ export default function App() {
   const { needsRefresh, updateSW } = useSWUpdate()
   const { canInstall, promptInstall, dismiss } = useInstallPrompt()
 
+  // Pre-warm Tesseract worker during idle time
+  useEffect(() => {
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(() => preloadWorker())
+      return () => cancelIdleCallback(id)
+    } else {
+      const id = setTimeout(() => preloadWorker(), 2000)
+      return () => clearTimeout(id)
+    }
+  }, [])
+
   return (
     <BrowserRouter>
       <div className="fixed top-3 right-3 z-40">
         <AppearanceToggle />
       </div>
-      <Suspense fallback={<PageLoader />}>
-        <AnimatedRoutes />
-      </Suspense>
+      <ErrorBoundary>
+        <main>
+          <Suspense fallback={<PageLoader />}>
+            <AnimatedRoutes />
+          </Suspense>
+        </main>
+      </ErrorBoundary>
       {needsRefresh ? (
         <UpdateToast onUpdate={updateSW} />
       ) : (

@@ -1,3 +1,4 @@
+import { memo, useState } from 'react'
 import type { LineItem, Person } from '../../types'
 import { formatCurrency } from '../../utils/formatCurrency'
 import PersonChip from './PersonChip'
@@ -13,7 +14,7 @@ interface AssignableItemProps {
   disabled?: boolean
 }
 
-export default function AssignableItem({
+export default memo(function AssignableItem({
   item,
   assignees,
   currentPerson,
@@ -24,8 +25,10 @@ export default function AssignableItem({
   disabled = false,
 }: AssignableItemProps) {
   const totalPrice = item.price * item.quantity
+  const [claimStatus, setClaimStatus] = useState('')
 
   function handleRowClick() {
+    setClaimStatus(isAssigned ? `${item.name} unclaimed` : `${item.name} claimed`)
     onToggle(item.id)
   }
 
@@ -115,6 +118,11 @@ export default function AssignableItem({
         {formatCurrency(totalPrice)}
       </span>
 
+      {/* Visually-hidden live region for screen readers */}
+      <span className="sr-only" aria-live="polite">
+        {claimStatus}
+      </span>
+
       {/* Share button — opens SharedItemSplitter */}
       <button
         onClick={handleShareClick}
@@ -134,4 +142,4 @@ export default function AssignableItem({
       </button>
     </div>
   )
-}
+})
