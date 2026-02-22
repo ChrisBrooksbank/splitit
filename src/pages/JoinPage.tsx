@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Wifi, RefreshCw, QrCode } from 'lucide-react'
+import { Wifi, RefreshCw, UserPlus } from 'lucide-react'
 import { useLiveSessionGuest } from '../hooks/useLiveSessionGuest'
 import GuestClaimingView from '../components/liveSession/GuestClaimingView'
 import GuestTipView from '../components/liveSession/GuestTipView'
@@ -177,10 +177,10 @@ export default function JoinPage() {
     <button
       onClick={() => setShowQR(true)}
       className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg active:scale-95 transition-transform"
-      aria-label="Show QR code to invite others"
+      aria-label="Show join QR code to invite others"
     >
-      <QrCode size={14} />
-      Invite Others
+      <UserPlus size={14} />
+      Show Join QR
     </button>
   ) : null
 

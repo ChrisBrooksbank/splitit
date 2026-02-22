@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Users, Percent, ArrowRight, QrCode } from 'lucide-react'
+import { Users, Percent, ArrowRight, UserPlus } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -106,9 +106,9 @@ export default function TipSelectionPage() {
             <button
               onClick={() => setShowQR(true)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Show QR code to invite others"
+              aria-label="Show join QR code to invite others"
             >
-              <QrCode size={18} className="text-gray-500 dark:text-gray-400" />
+              <UserPlus size={18} className="text-gray-500 dark:text-gray-400" />
             </button>
           )}
         </div>

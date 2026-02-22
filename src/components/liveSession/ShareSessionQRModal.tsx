@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { X, Copy } from 'lucide-react'
+import { X, Copy, UserPlus } from 'lucide-react'
 
 interface ShareSessionQRModalProps {
   joinUrl: string
@@ -47,11 +47,16 @@ export default function ShareSessionQRModal({ joinUrl, onClose }: ShareSessionQR
           <X size={20} className="text-gray-500 dark:text-gray-400" />
         </button>
 
+        <div className="flex justify-center mb-2">
+          <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+            <UserPlus size={20} className="text-blue-600 dark:text-blue-400" />
+          </div>
+        </div>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 text-center mb-1">
-          Invite Others
+          Join Session
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-5">
-          Scan to join this bill split
+          Others can scan this to join the live session and claim their items
         </p>
 
         {/* QR Code */}

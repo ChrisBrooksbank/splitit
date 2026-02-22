@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, Users, QrCode } from 'lucide-react'
+import { CheckCircle2, Users, UserPlus } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -212,10 +212,10 @@ export default function AssignmentPage() {
             <button
               onClick={() => setShowQR(true)}
               className="w-full py-2.5 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl active:scale-95 transition-transform"
-              aria-label="Show QR code to invite others"
+              aria-label="Show join QR code to invite others"
             >
-              <QrCode size={16} className="inline -mt-0.5 mr-1.5" />
-              Invite Others
+              <UserPlus size={16} className="inline -mt-0.5 mr-1.5" />
+              Show Join QR
             </button>
           </div>
         )}
@@ -302,9 +302,9 @@ export default function AssignmentPage() {
             <button
               onClick={() => setShowQR(true)}
               className="ml-auto p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Show QR code to invite others"
+              aria-label="Show join QR code to invite others"
             >
-              <QrCode size={18} className="text-gray-500 dark:text-gray-400" />
+              <UserPlus size={18} className="text-gray-500 dark:text-gray-400" />
             </button>
           )}
         </div>
