@@ -66,7 +66,10 @@ export const useLiveSessionStore = create<LiveSessionStore>()((set) => ({
 
   identifyGuest: (peerId, personId, displayName) =>
     set((state) => ({
-      guests: state.guests.map((g) => (g.peerId === peerId ? { ...g, personId, displayName } : g)),
+      // Remove old disconnected entries with the same personId (ghost cleanup after reconnect)
+      guests: state.guests
+        .filter((g) => !(g.peerId !== peerId && g.personId === personId && !g.connected))
+        .map((g) => (g.peerId === peerId ? { ...g, personId, displayName } : g)),
     })),
 
   setSyncedState: (syncedState) => set({ syncedState }),

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(tail:*)",
+      "Bash(cd C:/code/splitit && npm run check 2>&1)",
+      "Bash(cd C:/code/splitit && npx prettier --write src/services/liveSession/RelayService.ts src/services/liveSession/types.ts tests/services/liveSession/RelayService.test.ts 2>&1)",
+      "Bash(head:*)"
+    ]
+  }
+}

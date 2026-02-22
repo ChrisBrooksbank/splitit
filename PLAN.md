@@ -21,7 +21,7 @@ Splitting a restaurant bill fairly is a universal pain point. Existing apps eith
 - **IDs:** nanoid
 - **Testing:** Vitest + React Testing Library
 
-Total production deps: 6 packages. No backend required.
+Total production deps: 6 packages. The only server-side component is a lightweight WebSocket relay on Deno Deploy for live multi-device sessions.
 
 ## Core Data Model
 

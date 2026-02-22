@@ -3,7 +3,7 @@ import { usePeopleStore } from '../../store/peopleStore'
 import { useAssignmentStore } from '../../store/assignmentStore'
 import { useTipStore } from '../../store/tipStore'
 import { useLiveSessionStore } from '../../store/liveSessionStore'
-import type { PeerService } from './PeerService'
+import type { RelayService } from './RelayService'
 import type { GuestMessage, HostMessage, SessionPhase, SyncPayload } from './types'
 import { debounce } from '../../utils/debounce'
 
@@ -29,7 +29,7 @@ export function buildSyncPayload(): SyncPayload {
   }
 }
 
-export function createHostOrchestrator(peerService: PeerService) {
+export function createHostOrchestrator(peerService: RelayService) {
   const broadcastState = () => {
     const payload = buildSyncPayload()
     const msg: HostMessage = { type: 'SYNC_STATE', payload }
@@ -95,33 +95,30 @@ export function createHostOrchestrator(peerService: PeerService) {
     broadcastState()
   }
 
-  const handleGuestStale = (peerId: string) => {
+  const handleGuestConnected = (peerId: string) => {
+    useLiveSessionStore.getState().addGuest({
+      peerId,
+      personId: null,
+      displayName: null,
+      connected: true,
+    })
+  }
+
+  const handleGuestDisconnected = (peerId: string) => {
     useLiveSessionStore.getState().disconnectGuest(peerId)
   }
 
   const start = () => {
     peerService.on('guest-message', handleGuestMessage)
-
-    peerService.on('guest-connected', (peerId) => {
-      useLiveSessionStore.getState().addGuest({
-        peerId,
-        personId: null,
-        displayName: null,
-        connected: true,
-      })
-    })
-
-    peerService.on('guest-disconnected', (peerId) => {
-      useLiveSessionStore.getState().disconnectGuest(peerId)
-    })
-
-    peerService.on('guest-stale', handleGuestStale)
+    peerService.on('guest-connected', handleGuestConnected)
+    peerService.on('guest-disconnected', handleGuestDisconnected)
   }
 
   const destroy = () => {
-    debouncedBroadcast.cancel()
+    debouncedBroadcast.flush()
     peerService.off('guest-message', handleGuestMessage)
-    peerService.off('guest-stale', handleGuestStale)
+    peerService.off('guest-connected', handleGuestConnected)
+    peerService.off('guest-disconnected', handleGuestDisconnected)
   }
 
   return { start, broadcastState, advancePhase, destroy }

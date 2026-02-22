@@ -3,7 +3,7 @@ import { renderHook, act, cleanup } from '@testing-library/react'
 import { useLiveSessionHost } from '../../src/hooks/useLiveSessionHost'
 import { useLiveSessionStore } from '../../src/store/liveSessionStore'
 
-// Mock PeerService
+// Mock RelayService
 const mockStartHost = vi.fn()
 const mockDestroy = vi.fn()
 const mockOn = vi.fn()
@@ -12,8 +12,8 @@ const mockBroadcastToAll = vi.fn()
 const mockSendToGuest = vi.fn()
 const mockGetConnectedPeerIds = vi.fn(() => [])
 
-vi.mock('../../src/services/liveSession/PeerService', () => ({
-  PeerService: class {
+vi.mock('../../src/services/liveSession/RelayService', () => ({
+  RelayService: class {
     startHost = mockStartHost
     destroy = mockDestroy
     on = mockOn

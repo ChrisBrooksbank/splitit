@@ -8,8 +8,8 @@ const mockDestroy = vi.fn()
 const mockSendToHost = vi.fn()
 const handlers: Record<string, (...args: unknown[]) => void> = {}
 
-vi.mock('../../src/services/liveSession/PeerService', () => ({
-  PeerService: class {
+vi.mock('../../src/services/liveSession/RelayService', () => ({
+  RelayService: class {
     joinAsGuest = mockJoinAsGuest
     destroy = mockDestroy
     sendToHost = mockSendToHost

@@ -1,6 +1,7 @@
 export interface DebouncedFunction<T extends (...args: never[]) => void> {
   (...args: Parameters<T>): void
   cancel: () => void
+  flush: () => void
 }
 
 export function debounce<T extends (...args: never[]) => void>(
@@ -8,8 +9,10 @@ export function debounce<T extends (...args: never[]) => void>(
   ms: number
 ): DebouncedFunction<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
+  let lastArgs: Parameters<T>
 
   const debounced = (...args: Parameters<T>) => {
+    lastArgs = args
     if (timeoutId !== null) {
       clearTimeout(timeoutId)
     }
@@ -23,6 +26,14 @@ export function debounce<T extends (...args: never[]) => void>(
     if (timeoutId !== null) {
       clearTimeout(timeoutId)
       timeoutId = null
+    }
+  }
+
+  debounced.flush = () => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId)
+      timeoutId = null
+      fn(...lastArgs)
     }
   }
 

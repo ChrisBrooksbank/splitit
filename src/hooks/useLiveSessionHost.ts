@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { PeerService } from '../services/liveSession/PeerService'
+import { RelayService } from '../services/liveSession/RelayService'
 import { createHostOrchestrator } from '../services/liveSession/hostOrchestrator'
 import { useLiveSessionStore } from '../store/liveSessionStore'
 import type { SessionPhase } from '../services/liveSession/types'
 
 export function useLiveSessionHost() {
-  const peerRef = useRef<PeerService | null>(null)
+  const peerRef = useRef<RelayService | null>(null)
   const orchestratorRef = useRef<ReturnType<typeof createHostOrchestrator> | null>(null)
   const [roomCode, setRoomCode] = useState<string | null>(null)
   const [isStarting, setIsStarting] = useState(false)
@@ -30,7 +30,7 @@ export function useLiveSessionHost() {
 
   useEffect(() => {
     let cancelled = false
-    const peer = new PeerService()
+    const peer = new RelayService()
     peerRef.current = peer
 
     peer.on('status-change', (msg) => {
@@ -47,6 +47,33 @@ export function useLiveSessionHost() {
         const orchestrator = createHostOrchestrator(peer)
         orchestratorRef.current = orchestrator
         orchestrator.start()
+
+        peer.on('connection-error', async () => {
+          if (cancelled) return
+          setStatusMessage('Connection lost — reconnecting...')
+          useLiveSessionStore.getState().setConnectionStatus('reconnecting')
+
+          try {
+            const newCode = await peer.reconnectAsHost()
+            if (cancelled || !newCode) return
+
+            // Re-attach orchestrator listeners (old ones were on the old socket)
+            orchestrator.destroy()
+            orchestrator.start()
+
+            setRoomCode(newCode)
+            setError(null)
+            setStatusMessage(null)
+            useLiveSessionStore.getState().startSession('host', newCode)
+            useLiveSessionStore.getState().setConnectionStatus('connected')
+          } catch {
+            if (!cancelled) {
+              setError('Connection lost. Please reload to start a new session.')
+              setStatusMessage('Connection failed')
+              useLiveSessionStore.getState().setConnectionStatus('error')
+            }
+          }
+        })
 
         setRoomCode(code)
         setStatusMessage(null)

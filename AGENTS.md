@@ -41,7 +41,7 @@ npm run check          # Run ALL checks (typecheck + lint + format + tests)
 
 - All monetary values are **integer cents** (no floating point)
 - English-only OCR (Tesseract ~4MB language file)
-- Fully offline PWA — no backend, no cloud
+- Fully offline PWA — no backend except WebSocket relay (Deno Deploy) for live sessions
 - Minimal & clean UI — Apple-like simplicity
 - WCAG 2.1 AA accessibility
 - File structure defined in PLAN.md

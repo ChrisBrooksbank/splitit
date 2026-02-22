@@ -8,9 +8,9 @@ import { usePeopleStore } from '../../../src/store/peopleStore'
 import { useAssignmentStore } from '../../../src/store/assignmentStore'
 import { useTipStore } from '../../../src/store/tipStore'
 import { useLiveSessionStore } from '../../../src/store/liveSessionStore'
-import type { PeerService } from '../../../src/services/liveSession/PeerService'
+import type { RelayService } from '../../../src/services/liveSession/RelayService'
 
-function createMockPeerService(): PeerService & {
+function createMockRelayService(): RelayService & {
   handlers: Record<string, (...args: unknown[]) => void>
 } {
   const handlers: Record<string, (...args: unknown[]) => void> = {}
@@ -24,11 +24,11 @@ function createMockPeerService(): PeerService & {
     sendToGuest: vi.fn(),
     getConnectedPeerIds: vi.fn(() => []),
     destroy: vi.fn(),
-  } as unknown as PeerService & { handlers: Record<string, (...args: unknown[]) => void> }
+  } as unknown as RelayService & { handlers: Record<string, (...args: unknown[]) => void> }
 }
 
 describe('hostOrchestrator', () => {
-  let mockPeer: ReturnType<typeof createMockPeerService>
+  let mockPeer: ReturnType<typeof createMockRelayService>
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -37,7 +37,7 @@ describe('hostOrchestrator', () => {
     useAssignmentStore.getState().reset()
     useTipStore.getState().reset()
     useLiveSessionStore.getState().endSession()
-    mockPeer = createMockPeerService()
+    mockPeer = createMockRelayService()
   })
 
   afterEach(() => {

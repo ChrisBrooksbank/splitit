@@ -9,7 +9,7 @@ A fully offline Progressive Web App that makes splitting the bill painless. Phot
 - **Photo-to-items** — Snap a picture of the bill; Tesseract.js extracts line items locally (no upload required)
 - **Claim-based splitting** — Each person taps the items they ordered; shared items are divided evenly
 - **Proportional tax & tip** — Tax and tip are distributed based on each person's subtotal
-- **Live sessions** — Share a QR code so everyone can claim items from their own phone via peer-to-peer (PeerJS)
+- **Live sessions** — Share a QR code so everyone can claim items from their own phone via WebSocket relay
 - **Fully offline** — Service-worker-powered PWA; works without an internet connection after first load
 - **Dark mode** — Automatic and manual theme switching
 - **Installable** — Add to home screen on any device
@@ -21,7 +21,7 @@ A fully offline Progressive Web App that makes splitting the bill painless. Phot
 - **State:** Zustand
 - **OCR:** Tesseract.js (WASM, runs entirely in-browser)
 - **Routing:** React Router v7
-- **P2P:** PeerJS (WebRTC)
+- **Realtime:** WebSocket relay on Deno Deploy (`server/main.ts`)
 - **Testing:** Vitest + React Testing Library
 
 ## Getting Started
@@ -48,11 +48,23 @@ npm run dev        # Start dev server at http://localhost:5173
 
 ## Deployment
 
-SplitIt is deployed to **Netlify**. Every push to `master` triggers an automatic build and deploy.
+### Frontend (Netlify)
+
+Every push to `master` triggers an automatic build and deploy.
 
 - **Build command:** `npm run build`
 - **Publish directory:** `dist`
 - **SPA redirect:** All routes fall back to `index.html` (configured in `netlify.toml`)
+
+### Relay Server (Deno Deploy)
+
+Live sessions use a lightweight WebSocket relay server hosted on [Deno Deploy](https://deno.com/deploy). The server is stateless — it forwards JSON messages between host and guests in ephemeral rooms. No data is stored.
+
+- **Source:** `server/main.ts`
+- **Runtime:** [Deno](https://deno.com/)
+- **Run locally:** `cd server && deno task dev`
+- **Health check:** `GET /health` returns `{ status: "ok", rooms: N }`
+- **Client config:** `src/services/liveSession/relayConfig.ts` (override with `VITE_RELAY_URL` env var)
 
 ## Project Structure
 

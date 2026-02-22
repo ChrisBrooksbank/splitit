@@ -1,12 +1,12 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
-import { PeerService } from '../services/liveSession/PeerService'
+import { RelayService, RoomNotFoundError } from '../services/liveSession/RelayService'
 import { useLiveSessionStore } from '../store/liveSessionStore'
 import type { SyncPayload } from '../services/liveSession/types'
 
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'error' | 'disconnected'
 
 export function useLiveSessionGuest(roomCode: string) {
-  const peerRef = useRef<PeerService | null>(null)
+  const peerRef = useRef<RelayService | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting')
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
@@ -16,7 +16,7 @@ export function useLiveSessionGuest(roomCode: string) {
 
   useEffect(() => {
     let cancelled = false
-    const peer = new PeerService()
+    const peer = new RelayService()
     peerRef.current = peer
 
     peer.on('status-change', (msg) => {
@@ -30,8 +30,8 @@ export function useLiveSessionGuest(roomCode: string) {
       setStatusMessage('Reconnecting...')
 
       try {
-        await peer.reconnectToHost(roomCode)
-        if (cancelled) return
+        const didReconnect = await peer.reconnectToHost(roomCode)
+        if (cancelled || !didReconnect) return
 
         setConnectionStatus('connected')
         setStatusMessage(null)
@@ -48,10 +48,16 @@ export function useLiveSessionGuest(roomCode: string) {
             displayName: person?.name ?? 'Guest',
           })
         }
-      } catch {
+      } catch (err) {
         if (!cancelled) {
-          setConnectionStatus('disconnected')
-          useLiveSessionStore.getState().setConnectionStatus('disconnected')
+          if (err instanceof RoomNotFoundError) {
+            setConnectionStatus('error')
+            setStatusMessage('Host disconnected')
+            useLiveSessionStore.getState().setConnectionStatus('error')
+          } else {
+            setConnectionStatus('disconnected')
+            useLiveSessionStore.getState().setConnectionStatus('disconnected')
+          }
         }
       }
     }
@@ -79,10 +85,6 @@ export function useLiveSessionGuest(roomCode: string) {
         peer.on('connection-error', () => {
           if (!cancelled) attemptReconnect()
         })
-
-        peer.on('host-stale', () => {
-          if (!cancelled) attemptReconnect()
-        })
       } catch {
         if (!cancelled) {
           setConnectionStatus('error')
@@ -102,8 +104,9 @@ export function useLiveSessionGuest(roomCode: string) {
   const isConnected = connectionStatus === 'connected'
 
   const identify = useCallback((personId: string, displayName: string) => {
+    if (!peerRef.current?.isConnected()) return
     useLiveSessionStore.getState().setMyPersonId(personId)
-    peerRef.current?.sendToHost({ type: 'IDENTIFY', personId, displayName })
+    peerRef.current.sendToHost({ type: 'IDENTIFY', personId, displayName })
   }, [])
 
   const sendClaim = useCallback((itemId: string) => {

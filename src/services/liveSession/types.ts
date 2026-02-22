@@ -37,6 +37,3 @@ export type GuestMessage =
 export type HostMessage =
   | { type: 'SYNC_STATE'; payload: SyncPayload }
   | { type: 'PHASE_CHANGE'; phase: SessionPhase }
-
-// Internal heartbeat messages — filtered before app-level validation
-export type InternalMessage = { type: '__PING' } | { type: '__PONG' }
