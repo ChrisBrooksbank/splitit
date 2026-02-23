@@ -9,42 +9,19 @@ const MAX_DIMENSION = 2000
 const MIN_DIMENSION = 1000
 
 /**
- * Run pixel manipulation in a Web Worker if available, otherwise on main thread.
+ * Run pixel manipulation (grayscale + contrast stretch only).
+ * Tesseract.js handles its own binarization internally, so we skip
+ * sharpen / median / adaptive threshold which can destroy text.
  */
-async function processPixels(
-  pixels: Uint8ClampedArray,
-  width: number,
-  height: number
-): Promise<Uint8ClampedArray> {
-  if (typeof Worker !== 'undefined') {
-    try {
-      const worker = new Worker(new URL('./imagePreprocessor.worker.ts', import.meta.url), {
-        type: 'module',
-      })
-      return await new Promise<Uint8ClampedArray>((resolve, reject) => {
-        worker.onmessage = (e: MessageEvent<{ pixels: Uint8ClampedArray }>) => {
-          worker.terminate()
-          resolve(e.data.pixels)
-        }
-        worker.onerror = (err) => {
-          worker.terminate()
-          reject(err)
-        }
-        worker.postMessage({ pixels, width, height }, [pixels.buffer])
-      })
-    } catch {
-      // Worker failed — fall through to main-thread processing
-    }
-  }
-
-  // Main-thread fallback
+function processPixelsSimple(pixels: Uint8ClampedArray, width: number, height: number): void {
   const numPixels = width * height
   toGrayscale(pixels)
   contrastStretch(pixels, numPixels)
-  sharpen(pixels, width, height)
-  medianFilter(pixels, width, height)
-  adaptiveThreshold(pixels, width, height)
-  return pixels
+  // Note: sharpen, medianFilter, and adaptiveThreshold are intentionally
+  // omitted — Tesseract handles binarization better on its own, and the
+  // aggressive thresholding was destroying text in many real-world photos.
+  void width
+  void height
 }
 
 /**
@@ -74,13 +51,9 @@ export async function preprocessImage(file: File): Promise<Blob> {
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
-  // Steps 3-7: pixel manipulation (Web Worker or main thread)
-  const processed = await processPixels(imageData.data, canvas.width, canvas.height)
+  // Steps 3-4: grayscale + contrast stretch (main thread, fast enough)
+  processPixelsSimple(imageData.data, canvas.width, canvas.height)
 
-  // Write back and export
-  if (processed !== imageData.data) {
-    imageData.data.set(processed)
-  }
   ctx.putImageData(imageData, 0, 0)
   return canvasToBlob(canvas)
 }
