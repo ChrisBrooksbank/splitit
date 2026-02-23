@@ -11,6 +11,36 @@ import LineItemList from '../components/bill/LineItemList'
 import BillSummaryCard from '../components/bill/BillSummaryCard'
 import StepIndicator from '../components/layout/StepIndicator'
 
+function RawOcrView({ rawOcrText }: { rawOcrText: string }) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(rawOcrText).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <details className="mt-2">
+      <summary className="text-xs text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
+        View raw scan
+      </summary>
+      <div className="mt-2 relative">
+        <button
+          onClick={handleCopy}
+          className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all"
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+        <pre className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs text-gray-600 dark:text-gray-400 font-mono whitespace-pre-wrap overflow-x-auto max-h-64 overflow-y-auto">
+          {rawOcrText}
+        </pre>
+      </div>
+    </details>
+  )
+}
+
 /** Read and consume OCR data from sessionStorage (called once). */
 function consumeOcrData(): { parsed: ParsedReceipt | null; rawOcrText: string | null } {
   const ocrTexts = sessionStorage.getItem('ocrResults')
@@ -153,16 +183,7 @@ export default function ItemEditorPage() {
         />
 
         {/* Raw OCR text debug view */}
-        {ocrInit.rawOcrText && (
-          <details className="mt-2">
-            <summary className="text-xs text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300">
-              View raw scan
-            </summary>
-            <pre className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs text-gray-600 dark:text-gray-400 font-mono whitespace-pre-wrap overflow-x-auto max-h-64 overflow-y-auto">
-              {ocrInit.rawOcrText}
-            </pre>
-          </details>
-        )}
+        {ocrInit.rawOcrText && <RawOcrView rawOcrText={ocrInit.rawOcrText} />}
       </div>
 
       {/* Sticky footer: totals + continue */}
