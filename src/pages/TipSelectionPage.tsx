@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { Users, Percent, ArrowRight, UserPlus } from 'lucide-react'
+import CopySummaryButton from '../components/layout/CopySummaryButton'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -102,15 +103,18 @@ export default function TipSelectionPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
             Tip
           </h1>
-          {isLive && role === 'host' && roomCode && (
-            <button
-              onClick={() => setShowQR(true)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Show join QR code to invite others"
-            >
-              <UserPlus size={18} className="text-gray-500 dark:text-gray-400" />
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            <CopySummaryButton />
+            {isLive && role === 'host' && roomCode && (
+              <button
+                onClick={() => setShowQR(true)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Show join QR code to invite others"
+              >
+                <UserPlus size={18} className="text-gray-500 dark:text-gray-400" />
+              </button>
+            )}
+          </div>
         </div>
         <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
           Each person picks their own tip.

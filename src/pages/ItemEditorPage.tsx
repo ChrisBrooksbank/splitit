@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid'
 import { ArrowRight, QrCode } from 'lucide-react'
 import { useBillStore } from '../store/billStore'
 import { useHistoryStore } from '../store/historyStore'
+import CopySummaryButton from '../components/layout/CopySummaryButton'
 import { parseReceipt, mergeReceipts, type ParsedReceipt } from '../services/ocr/receiptParser'
 import { peekReceiptPhotos } from '../utils/photoThumbnail'
 import LineItemList from '../components/bill/LineItemList'
@@ -101,15 +102,18 @@ export default function ItemEditorPage() {
             Tap any item to edit. Add or remove items as needed.
           </p>
         </div>
-        {lineItems.length > 0 && (
-          <button
-            onClick={() => navigate('/share')}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-95 transition-transform flex-shrink-0 ml-2"
-            aria-label="Share bill via QR code"
-          >
-            <QrCode size={20} className="text-gray-700 dark:text-gray-300" />
-          </button>
-        )}
+        <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+          <CopySummaryButton />
+          {lineItems.length > 0 && (
+            <button
+              onClick={() => navigate('/share')}
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-95 transition-transform flex-shrink-0"
+              aria-label="Share bill via QR code"
+            >
+              <QrCode size={20} className="text-gray-700 dark:text-gray-300" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* OCR-empty feedback banner */}
