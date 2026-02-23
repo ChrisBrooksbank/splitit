@@ -15,6 +15,7 @@ import {
   QUANTITY_PATTERN,
   SKIP_PATTERNS,
   METADATA_PATTERNS,
+  MODIFIER_PATTERN,
   parsePriceCents,
 } from '../../utils/receiptPatterns'
 
@@ -23,6 +24,7 @@ export interface ParsedReceipt {
   detectedSubtotal: number | null
   detectedTax: number | null
   detectedTotal: number | null
+  validationWarnings: string[]
 }
 
 /** Confidence thresholds */
@@ -69,14 +71,46 @@ export function parseReceipt(ocrText: string): ParsedReceipt {
       continue
     }
 
+    // Check for modifier lines (indented with -/+/*)
+    const modifierItem = extractModifierItem(rawLine)
+    if (modifierItem !== undefined) {
+      if (modifierItem !== null) {
+        lineItems.push(modifierItem)
+      }
+      // null = modifier without price (kitchen instruction), skip
+      continue
+    }
+
     // Try to parse as a line item
     const item = extractLineItem(line)
     if (item) {
       lineItems.push(item)
+      continue
+    }
+
+    // Multi-line joining: if no price, not noise/metadata, and follows a parsed item,
+    // append as continuation of previous item name
+    if (lineItems.length > 0 && isContinuationLine(rawLine, line)) {
+      const prev = lineItems[lineItems.length - 1]
+      prev.name = prev.name + ' ' + line
     }
   }
 
-  return { lineItems, detectedSubtotal, detectedTax, detectedTotal }
+  // Post-OCR validation: compare item sum vs detected subtotal
+  const validationWarnings: string[] = []
+  if (lineItems.length > 0 && detectedSubtotal !== null) {
+    const itemsTotal = lineItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const diffCents = Math.abs(itemsTotal - detectedSubtotal)
+    if (diffCents > 50) {
+      const itemsFmt = (itemsTotal / 100).toFixed(2)
+      const subFmt = (detectedSubtotal / 100).toFixed(2)
+      validationWarnings.push(
+        `Items total (${itemsFmt}) differs from receipt subtotal (${subFmt}) — some items may be missing or misread`
+      )
+    }
+  }
+
+  return { lineItems, detectedSubtotal, detectedTax, detectedTotal, validationWarnings }
 }
 
 /**
@@ -104,11 +138,27 @@ export function mergeReceipts(receipts: ParsedReceipt[]): ParsedReceipt {
   const detectedTax = receipts.find((r) => r.detectedTax !== null)?.detectedTax ?? null
   const detectedTotal = receipts.find((r) => r.detectedTotal !== null)?.detectedTotal ?? null
 
+  // Validate merged result
+  const mergedItems = Array.from(seen.values())
+  const validationWarnings: string[] = []
+  if (mergedItems.length > 0 && detectedSubtotal !== null) {
+    const itemsTotal = mergedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const diffCents = Math.abs(itemsTotal - detectedSubtotal)
+    if (diffCents > 50) {
+      const itemsFmt = (itemsTotal / 100).toFixed(2)
+      const subFmt = (detectedSubtotal / 100).toFixed(2)
+      validationWarnings.push(
+        `Items total (${itemsFmt}) differs from receipt subtotal (${subFmt}) — some items may be missing or misread`
+      )
+    }
+  }
+
   return {
-    lineItems: Array.from(seen.values()),
+    lineItems: mergedItems,
     detectedSubtotal,
     detectedTax,
     detectedTotal,
+    validationWarnings,
   }
 }
 
@@ -139,6 +189,56 @@ function extractMetadata(
   return null
 }
 
+/**
+ * Check if a line is a continuation of the previous item name.
+ * A continuation line: has no price, has leading whitespace or starts lowercase,
+ * contains at least one letter, and is not a metadata/skip line.
+ */
+function isContinuationLine(rawLine: string, trimmedLine: string): boolean {
+  // Must not have a price
+  if (PRICE_PATTERN.test(trimmedLine)) return false
+  // Must have at least one letter
+  if (!/[a-zA-Z]/.test(trimmedLine)) return false
+  // Must have leading whitespace or start lowercase (continuation style)
+  const hasIndent = rawLine.length > trimmedLine.length
+  const startsLower = /^[a-z]/.test(trimmedLine)
+  if (!hasIndent && !startsLower) return false
+  // Must not be a metadata line
+  if (extractMetadata(trimmedLine)) return false
+  return true
+}
+
+/**
+ * Extract a modifier/add-on line (e.g. "  - No onions" or "  + Extra cheese  $1.50").
+ * Returns a LineItem if the modifier has a price, null if no price (kitchen instruction),
+ * or undefined if the line is not a modifier.
+ */
+function extractModifierItem(rawLine: string): LineItem | null | undefined {
+  if (!MODIFIER_PATTERN.test(rawLine)) return undefined
+  const trimmed = rawLine.trim()
+  const priceMatch = trimmed.match(PRICE_PATTERN)
+  if (!priceMatch) return null // kitchen instruction, no price
+
+  const rawPriceStr = priceMatch[1]
+  const cents = parsePriceCents(rawPriceStr)
+  if (cents === null || cents <= 0) return null
+
+  // Remove the price from end, then strip the modifier prefix (- / + / *)
+  const withoutPrice = trimmed.slice(0, trimmed.length - priceMatch[0].length).trim()
+  const name = withoutPrice.replace(/^[-+*]\s*/, '').trim()
+  if (name.length === 0 || !/[a-zA-Z]/.test(name)) return null
+
+  const hasCurrencySymbol = /[£$€]/.test(trimmed)
+  return {
+    id: nanoid(),
+    name,
+    price: cents,
+    quantity: 1,
+    confidence: hasCurrencySymbol ? HIGH_CONFIDENCE : MEDIUM_CONFIDENCE,
+    manuallyEdited: false,
+  }
+}
+
 function extractLineItem(line: string): LineItem | null {
   // Must have a price at the end of the line
   const priceMatch = line.match(PRICE_PATTERN)
@@ -155,8 +255,13 @@ function extractLineItem(line: string): LineItem | null {
     // At least one of them is in a numeric position (next to digits or decimal)
     /(?:\d[lIoO]|[lIoO]\d|[lIoO]\.)/.test(rawPriceStr)
 
+  // Check if line has a leading negative sign (discount/refund)
+  const isNegative = /^-/.test(priceMatch[0].trim())
+
   const cents = parsePriceCents(rawPriceStr)
-  if (cents === null || cents <= 0) return null
+  if (cents === null || (cents <= 0 && !isNegative)) return null
+
+  const finalCents = isNegative ? -Math.abs(cents) : cents
 
   // Remove the price portion from the end of the line to get the name part
   const nameRaw = line.slice(0, line.length - priceMatch[0].length).trim()
@@ -185,7 +290,7 @@ function extractLineItem(line: string): LineItem | null {
   // The price on the receipt line is the line total (e.g. "2 X Soup  16.00"
   // means 16.00 for both soups). Divide by quantity to get the unit price,
   // since the rest of the app treats `price` as unit price.
-  const unitPrice = quantity > 1 ? Math.round(cents / quantity) : cents
+  const unitPrice = quantity > 1 ? Math.round(finalCents / quantity) : finalCents
 
   return {
     id: nanoid(),

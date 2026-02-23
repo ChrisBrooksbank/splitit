@@ -2,9 +2,9 @@
  * Regex patterns for parsing restaurant receipt OCR text.
  */
 
-// Price at the end of a line: $12.99, 12.99, $1,234.56
+// Price at the end of a line: $12.99, 12.99, $1,234.56, -$2.00
 // Also allows leading OCR-corrupted digits (l/I in place of 1): $l2.99
-export const PRICE_PATTERN = /[£$€]?\s*([lIO\d]{1,4}[,.]?[lIO\d]{0,3}[.,][lIO\d]{2})\s*$/
+export const PRICE_PATTERN = /-?\s*[£$€]?\s*([lIO\d]{1,4}[,.]?[lIO\d]{0,3}[.,][lIO\d]{2})\s*$/
 
 // Price with possible OCR digit errors (l/I → 1, O/o → 0) before parsing
 // Applied to a candidate price string only
@@ -14,6 +14,9 @@ export const OCR_ZERO_FIX = /[Oo]/g // replace with '0'
 // Quantity prefix patterns at the start of an item name:
 //   "2x", "3 X", "2 ×", "3x ", "2 x "
 export const QUANTITY_PATTERN = /^(\d+)\s*[xX×]\s+/
+
+// Modifier/add-on lines: 2+ spaces of indent followed by -/+/*
+export const MODIFIER_PATTERN = /^\s{2,}[-+*]\s+/
 
 // Lines to skip entirely (noise / non-item content)
 export const SKIP_PATTERNS: RegExp[] = [
@@ -84,7 +87,7 @@ export function parsePriceCents(raw: string): number | null {
   }
 
   const value = parseFloat(fixed)
-  if (isNaN(value) || value < 0) return null
+  if (isNaN(value)) return null
 
   return Math.round(value * 100)
 }

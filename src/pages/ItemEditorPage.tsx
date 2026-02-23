@@ -12,7 +12,7 @@ import BillSummaryCard from '../components/bill/BillSummaryCard'
 import StepIndicator from '../components/layout/StepIndicator'
 
 /** Read and consume OCR data from sessionStorage (called once). */
-function consumeOcrData(): ParsedReceipt | null {
+function consumeOcrData(): { parsed: ParsedReceipt | null; rawOcrText: string | null } {
   const ocrTexts = sessionStorage.getItem('ocrResults')
   const ocrText = sessionStorage.getItem('ocrResult')
 
@@ -21,13 +21,17 @@ function consumeOcrData(): ParsedReceipt | null {
 
   if (ocrTexts) {
     const texts: string[] = JSON.parse(ocrTexts)
+    const rawOcrText = texts.join('\n--- photo break ---\n')
     const receipts = texts.filter((t) => t.trim().length > 0).map((t) => parseReceipt(t))
-    return receipts.length > 0 ? mergeReceipts(receipts) : null
+    return {
+      parsed: receipts.length > 0 ? mergeReceipts(receipts) : null,
+      rawOcrText,
+    }
   }
   if (ocrText) {
-    return parseReceipt(ocrText)
+    return { parsed: parseReceipt(ocrText), rawOcrText: ocrText }
   }
-  return null
+  return { parsed: null, rawOcrText: null }
 }
 
 export default function ItemEditorPage() {
@@ -39,11 +43,13 @@ export default function ItemEditorPage() {
 
   // Lazy-initialize OCR-derived state (runs once, during first render)
   const [ocrInit] = useState(() => {
-    const parsed = consumeOcrData()
+    const { parsed, rawOcrText } = consumeOcrData()
     return {
       detectedTotal: parsed?.detectedTotal ?? null,
       hadOcrInput: parsed !== null,
       parsedItems: parsed?.lineItems ?? [],
+      validationWarnings: parsed?.validationWarnings ?? [],
+      rawOcrText,
     }
   })
 
@@ -125,6 +131,17 @@ export default function ItemEditorPage() {
         </div>
       )}
 
+      {/* Validation warnings banner */}
+      {ocrInit.validationWarnings.length > 0 && (
+        <div className="mx-4 mb-4 rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-950 p-3">
+          {ocrInit.validationWarnings.map((warning, i) => (
+            <p key={i} className="text-sm text-amber-900 dark:text-amber-100">
+              {warning}
+            </p>
+          ))}
+        </div>
+      )}
+
       {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-4">
         {/* Line item list */}
@@ -134,6 +151,18 @@ export default function ItemEditorPage() {
           onDelete={deleteLineItem}
           onAdd={handleAdd}
         />
+
+        {/* Raw OCR text debug view */}
+        {ocrInit.rawOcrText && (
+          <details className="mt-2">
+            <summary className="text-xs text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300">
+              View raw scan
+            </summary>
+            <pre className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs text-gray-600 dark:text-gray-400 font-mono whitespace-pre-wrap overflow-x-auto max-h-64 overflow-y-auto">
+              {ocrInit.rawOcrText}
+            </pre>
+          </details>
+        )}
       </div>
 
       {/* Sticky footer: totals + continue */}

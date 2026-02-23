@@ -31,8 +31,8 @@ describe('parsePriceCents', () => {
     expect(parsePriceCents('')).toBeNull()
   })
 
-  it('returns null for negative value', () => {
-    expect(parsePriceCents('-1.00')).toBeNull()
+  it('parses negative value (discount)', () => {
+    expect(parsePriceCents('-1.00')).toBe(-100)
   })
 
   it('handles zero amount', () => {
@@ -449,5 +449,131 @@ Wine            $12.00
 
     // Same name, different prices → not duplicates
     expect(merged.lineItems).toHaveLength(2)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Validation warnings
+// ---------------------------------------------------------------------------
+describe('validationWarnings', () => {
+  it('warns when items total differs from subtotal by > 50¢', () => {
+    const text = `
+Burger          $8.99
+Fries           $3.49
+
+SUBTOTAL        $14.73
+TAX              $1.18
+TOTAL           $15.91
+`
+    const result = parseReceipt(text)
+    // Items: 899 + 349 = 1248, Subtotal: 1473, diff = 225 > 50
+    expect(result.validationWarnings.length).toBe(1)
+    expect(result.validationWarnings[0]).toContain('differs from receipt subtotal')
+  })
+
+  it('does not warn when items total matches subtotal within 50¢', () => {
+    const text = `
+Burger          $8.99
+Fries           $3.49
+Soda            $2.25
+
+SUBTOTAL        $14.73
+TAX              $1.18
+TOTAL           $15.91
+`
+    const result = parseReceipt(text)
+    expect(result.validationWarnings).toHaveLength(0)
+  })
+
+  it('does not warn when subtotal is absent', () => {
+    const text = `
+Burger          $8.99
+TOTAL           $9.71
+`
+    const result = parseReceipt(text)
+    expect(result.validationWarnings).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Multi-line item names
+// ---------------------------------------------------------------------------
+describe('multi-line item names', () => {
+  it('joins a continuation line to the previous item', () => {
+    const text = `
+Grilled Salmon with     $24.95
+  lemon butter sauce
+Fries                    $3.49
+
+SUBTOTAL                $28.44
+`
+    const result = parseReceipt(text)
+    const salmon = result.lineItems.find((i) => i.name.includes('Salmon'))
+    expect(salmon).toBeDefined()
+    expect(salmon?.name).toContain('lemon butter sauce')
+    expect(result.lineItems).toHaveLength(2)
+  })
+
+  it('does not join a line that starts with an uppercase word (not a continuation)', () => {
+    const text = `
+Burger          $8.99
+Fries           $3.49
+`
+    const result = parseReceipt(text)
+    expect(result.lineItems).toHaveLength(2)
+    expect(result.lineItems[0].name).toBe('Burger')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Modifier/add-on lines
+// ---------------------------------------------------------------------------
+describe('modifier lines', () => {
+  it('creates an item for a priced modifier', () => {
+    const text = `
+Burger              $8.99
+  + Extra cheese    $1.50
+Fries               $3.49
+`
+    const result = parseReceipt(text)
+    const cheese = result.lineItems.find((i) => i.name.includes('Extra cheese'))
+    expect(cheese).toBeDefined()
+    expect(cheese?.price).toBe(150)
+  })
+
+  it('ignores kitchen instructions without prices', () => {
+    const text = `
+Burger              $8.99
+  - No onions
+Fries               $3.49
+`
+    const result = parseReceipt(text)
+    expect(result.lineItems).toHaveLength(2)
+    expect(result.lineItems.find((i) => i.name.includes('onions'))).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Negative amounts (discounts)
+// ---------------------------------------------------------------------------
+describe('negative amounts', () => {
+  it('parses a negative price item', () => {
+    const text = `
+Burger              $8.99
+Fries               $3.49
+Manager Comp       -$2.00
+
+SUBTOTAL           $10.48
+TAX                 $0.84
+TOTAL              $11.32
+`
+    const result = parseReceipt(text)
+    const comp = result.lineItems.find((i) => i.name.includes('Manager Comp'))
+    expect(comp).toBeDefined()
+    expect(comp?.price).toBe(-200)
+  })
+
+  it('parsePriceCents handles zero', () => {
+    expect(parsePriceCents('0.00')).toBe(0)
   })
 })

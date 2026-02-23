@@ -26,7 +26,7 @@ async function getWorker(onProgress?: OcrProgressCallback): Promise<Worker> {
     return initPromise
   }
 
-  initPromise = createWorker('eng', 1, {
+  initPromise = createWorker('eng', 3, {
     logger: (msg) => {
       if (onProgress && typeof msg.progress === 'number') {
         onProgress(msg.progress, msg.status)
@@ -34,7 +34,7 @@ async function getWorker(onProgress?: OcrProgressCallback): Promise<Worker> {
     },
   }).then(async (worker) => {
     await worker.setParameters({
-      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+      tessedit_pageseg_mode: PSM.SPARSE_TEXT,
       preserve_interword_spaces: '1',
     })
     workerInstance = worker

@@ -1,11 +1,12 @@
 /**
  * Image preprocessing pipeline for OCR.
- * Steps: resize → grayscale → contrast stretch → Otsu binarization
+ * Steps: resize → deskew → grayscale → contrast stretch → sharpen → median filter → adaptive threshold
  * All operations use the Canvas API (no external dependencies).
  * Pixel manipulation is offloaded to a Web Worker when available.
  */
 
 const MAX_DIMENSION = 2000
+const MIN_DIMENSION = 1000
 
 /**
  * Run pixel manipulation in a Web Worker if available, otherwise on main thread.
@@ -41,7 +42,8 @@ async function processPixels(
   toGrayscale(pixels)
   contrastStretch(pixels, numPixels)
   sharpen(pixels, width, height)
-  otsuBinarize(pixels, numPixels)
+  medianFilter(pixels, width, height)
+  adaptiveThreshold(pixels, width, height)
   return pixels
 }
 
@@ -51,20 +53,29 @@ async function processPixels(
  */
 export async function preprocessImage(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file)
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')!
+  let canvas = document.createElement('canvas')
+  let ctx = canvas.getContext('2d')!
 
-  // Step 1: Resize to max 2000px on longest edge
+  // Step 1: Resize (enforce min 1000px and max 2000px on longest edge)
   const { width, height } = resize(bitmap.width, bitmap.height, MAX_DIMENSION)
   canvas.width = width
   canvas.height = height
   ctx.drawImage(bitmap, 0, 0, width, height)
   bitmap.close()
 
-  const imageData = ctx.getImageData(0, 0, width, height)
+  // Step 2: Detect and correct skew on a grayscale copy
+  const skewData = ctx.getImageData(0, 0, width, height)
+  toGrayscale(skewData.data)
+  const skewAngle = detectSkewAngle(skewData.data, width, height)
+  if (Math.abs(skewAngle) >= 0.001) {
+    canvas = rotateCanvas(canvas, -skewAngle)
+    ctx = canvas.getContext('2d')!
+  }
 
-  // Steps 2-5: pixel manipulation (Web Worker or main thread)
-  const processed = await processPixels(imageData.data, width, height)
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+  // Steps 3-7: pixel manipulation (Web Worker or main thread)
+  const processed = await processPixels(imageData.data, canvas.width, canvas.height)
 
   // Write back and export
   if (processed !== imageData.data) {
@@ -81,16 +92,25 @@ export async function preprocessImage(file: File): Promise<Blob> {
 function resize(
   srcWidth: number,
   srcHeight: number,
-  maxDim: number
+  maxDim: number,
+  minDim: number = MIN_DIMENSION
 ): { width: number; height: number } {
-  if (srcWidth <= maxDim && srcHeight <= maxDim) {
-    return { width: srcWidth, height: srcHeight }
+  const longest = Math.max(srcWidth, srcHeight)
+  if (longest > maxDim) {
+    const scale = maxDim / longest
+    return {
+      width: Math.round(srcWidth * scale),
+      height: Math.round(srcHeight * scale),
+    }
   }
-  const scale = maxDim / Math.max(srcWidth, srcHeight)
-  return {
-    width: Math.round(srcWidth * scale),
-    height: Math.round(srcHeight * scale),
+  if (longest < minDim) {
+    const scale = minDim / longest
+    return {
+      width: Math.round(srcWidth * scale),
+      height: Math.round(srcHeight * scale),
+    }
   }
+  return { width: srcWidth, height: srcHeight }
 }
 
 /**
@@ -198,6 +218,86 @@ export function computeOtsuThreshold(pixels: Uint8ClampedArray, numPixels: numbe
 }
 
 /**
+ * 3×3 median filter: removes salt-and-pepper noise while preserving text edges.
+ * For each pixel, sort 9 neighbours and pick the median value.
+ * Operates on R channel (after grayscale). Skips 1px border. Alpha unchanged.
+ */
+export function medianFilter(pixels: Uint8ClampedArray, width: number, height: number): void {
+  const src = new Uint8ClampedArray(pixels)
+  const buf = new Uint8Array(9)
+
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      let k = 0
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          buf[k++] = src[((y + dy) * width + (x + dx)) * 4]
+        }
+      }
+      // Partial sort to find median (index 4 of 9)
+      buf.sort()
+      const median = buf[4]
+      const idx = (y * width + x) * 4
+      pixels[idx] = median
+      pixels[idx + 1] = median
+      pixels[idx + 2] = median
+    }
+  }
+}
+
+/**
+ * Adaptive mean thresholding using an integral image (summed area table).
+ * For each pixel, threshold = local mean over windowSize×windowSize - C.
+ * O(1) per-pixel mean lookup via integral image. Handles uneven lighting.
+ */
+export function adaptiveThreshold(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  windowSize: number = 15,
+  C: number = 10
+): void {
+  const numPixels = width * height
+
+  // Build integral image from R channel (grayscale)
+  const integral = new Float64Array((width + 1) * (height + 1))
+  const iw = width + 1
+  for (let y = 0; y < height; y++) {
+    let rowSum = 0
+    for (let x = 0; x < width; x++) {
+      rowSum += pixels[(y * width + x) * 4]
+      integral[(y + 1) * iw + (x + 1)] = rowSum + integral[y * iw + (x + 1)]
+    }
+  }
+
+  const half = Math.floor(windowSize / 2)
+
+  for (let i = 0; i < numPixels; i++) {
+    const x = i % width
+    const y = Math.floor(i / width)
+
+    // Window bounds (clamped to image)
+    const x1 = Math.max(0, x - half)
+    const y1 = Math.max(0, y - half)
+    const x2 = Math.min(width - 1, x + half)
+    const y2 = Math.min(height - 1, y + half)
+
+    const count = (x2 - x1 + 1) * (y2 - y1 + 1)
+    const sum =
+      integral[(y2 + 1) * iw + (x2 + 1)] -
+      integral[y1 * iw + (x2 + 1)] -
+      integral[(y2 + 1) * iw + x1] +
+      integral[y1 * iw + x1]
+
+    const localMean = sum / count
+    const val = pixels[i * 4] >= localMean - C ? 255 : 0
+    pixels[i * 4] = val
+    pixels[i * 4 + 1] = val
+    pixels[i * 4 + 2] = val
+  }
+}
+
+/**
  * Sharpen grayscale image using a 3x3 Laplacian kernel: [0,-1,0; -1,5,-1; 0,-1,0].
  * Operates on the R channel (after grayscale). Skips 1px border. Alpha unchanged.
  */
@@ -222,6 +322,99 @@ export function sharpen(pixels: Uint8ClampedArray, width: number, height: number
       // alpha unchanged
     }
   }
+}
+
+/**
+ * Detect skew angle using projection profile method.
+ * Computes horizontal row sums at angles -5° to +5° (0.5° steps)
+ * on a downscaled binarized copy, picks the angle that maximizes
+ * the variance of row sums (text lines align → sharp peaks).
+ * Returns the detected angle in radians.
+ */
+export function detectSkewAngle(pixels: Uint8ClampedArray, width: number, height: number): number {
+  // Downscale for speed: target ~500px on longest edge
+  const targetSize = 500
+  const scale = targetSize / Math.max(width, height)
+  const sw = Math.round(width * scale)
+  const sh = Math.round(height * scale)
+
+  // Create downscaled grayscale+binarized copy
+  const small = new Uint8Array(sw * sh)
+  for (let y = 0; y < sh; y++) {
+    const srcY = Math.min(Math.floor(y / scale), height - 1)
+    for (let x = 0; x < sw; x++) {
+      const srcX = Math.min(Math.floor(x / scale), width - 1)
+      // R channel from grayscale pixels; treat < 128 as foreground (1)
+      small[y * sw + x] = pixels[(srcY * width + srcX) * 4] < 128 ? 1 : 0
+    }
+  }
+
+  let bestAngle = 0
+  let bestVariance = -1
+
+  for (let deg = -5; deg <= 5; deg += 0.5) {
+    const rad = (deg * Math.PI) / 180
+    const cosA = Math.cos(rad)
+    const sinA = Math.sin(rad)
+    const cx = sw / 2
+    const cy = sh / 2
+
+    // Compute row sums for this angle
+    const rowSums = new Float64Array(sh)
+    for (let y = 0; y < sh; y++) {
+      for (let x = 0; x < sw; x++) {
+        if (small[y * sw + x] === 0) continue
+        // Rotate point and map to row
+        const ry = Math.round(-sinA * (x - cx) + cosA * (y - cy) + cy)
+        if (ry >= 0 && ry < sh) {
+          rowSums[ry]++
+        }
+      }
+    }
+
+    // Compute variance of row sums
+    let sum = 0
+    let sumSq = 0
+    for (let i = 0; i < sh; i++) {
+      sum += rowSums[i]
+      sumSq += rowSums[i] * rowSums[i]
+    }
+    const mean = sum / sh
+    const variance = sumSq / sh - mean * mean
+
+    if (variance > bestVariance) {
+      bestVariance = variance
+      bestAngle = deg
+    }
+  }
+
+  return (bestAngle * Math.PI) / 180
+}
+
+/**
+ * Rotate the canvas by the given angle (radians) around its center.
+ * Expands canvas slightly to avoid cropping corners.
+ */
+function rotateCanvas(srcCanvas: HTMLCanvasElement, angle: number): HTMLCanvasElement {
+  if (Math.abs(angle) < 0.001) return srcCanvas
+
+  const { width, height } = srcCanvas
+  const cos = Math.abs(Math.cos(angle))
+  const sin = Math.abs(Math.sin(angle))
+  const newW = Math.ceil(width * cos + height * sin)
+  const newH = Math.ceil(width * sin + height * cos)
+
+  const dst = document.createElement('canvas')
+  dst.width = newW
+  dst.height = newH
+  const ctx = dst.getContext('2d')!
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, newW, newH)
+  ctx.translate(newW / 2, newH / 2)
+  ctx.rotate(angle)
+  ctx.drawImage(srcCanvas, -width / 2, -height / 2)
+
+  return dst
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {

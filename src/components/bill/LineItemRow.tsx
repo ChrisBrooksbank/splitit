@@ -63,7 +63,13 @@ export default memo(function LineItemRow({ item, onUpdate, onDelete }: LineItemR
         </span>
 
         {/* Price */}
-        <span className="flex-shrink-0 text-sm font-medium text-gray-900 dark:text-gray-100">
+        <span
+          className={`flex-shrink-0 text-sm font-medium ${
+            item.price < 0
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-gray-900 dark:text-gray-100'
+          }`}
+        >
           {formatCurrency(item.price * item.quantity)}
         </span>
 

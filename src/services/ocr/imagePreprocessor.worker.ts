@@ -1,10 +1,16 @@
 /**
  * Web Worker for image preprocessing.
- * Receives raw pixel data, applies grayscale → contrast stretch → sharpen → Otsu binarize,
+ * Receives raw pixel data, applies grayscale → contrast stretch → sharpen → median filter → adaptive threshold,
  * and returns the processed pixel data.
  */
 
-import { toGrayscale, contrastStretch, sharpen, otsuBinarize } from './imagePreprocessor'
+import {
+  toGrayscale,
+  contrastStretch,
+  sharpen,
+  medianFilter,
+  adaptiveThreshold,
+} from './imagePreprocessor'
 
 export interface PreprocessMessage {
   pixels: Uint8ClampedArray
@@ -19,7 +25,8 @@ self.onmessage = (e: MessageEvent<PreprocessMessage>) => {
   toGrayscale(pixels)
   contrastStretch(pixels, numPixels)
   sharpen(pixels, width, height)
-  otsuBinarize(pixels, numPixels)
+  medianFilter(pixels, width, height)
+  adaptiveThreshold(pixels, width, height)
 
   // Transfer the buffer back to the main thread
   const msg = { pixels }

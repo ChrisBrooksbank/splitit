@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect } from 'react'
 
 interface ImageCaptureProps {
   onCapture: (file: File, previewUrl: string) => void
@@ -7,14 +7,10 @@ interface ImageCaptureProps {
 
 /**
  * Primary: hidden file input with capture="environment" (works on iOS PWA, Android, desktop).
- * Enhancement: if getUserMedia is available, we still use the file input as primary to
- * ensure maximum compatibility. getUserMedia is available as a future enhancement hook.
+ * Enhancement: if getUserMedia is available, the parent can render CameraPreview directly.
  */
 export default function ImageCapture({ onCapture, triggerCapture }: ImageCaptureProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [hasMediaDevices] = useState(
-    () => typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
-  )
 
   // Trigger the file input when parent signals
   useEffect(() => {
@@ -42,7 +38,6 @@ export default function ImageCapture({ onCapture, triggerCapture }: ImageCapture
         className="sr-only"
         onChange={handleFileChange}
         aria-label="Capture or upload receipt photo"
-        data-has-media-devices={hasMediaDevices}
       />
     </>
   )

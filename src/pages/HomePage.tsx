@@ -13,6 +13,7 @@ import {
   QrCode,
 } from 'lucide-react'
 import ImageCapture from '../components/camera/ImageCapture'
+import CameraPreview from '../components/camera/CameraPreview'
 import ImagePreview from '../components/camera/ImagePreview'
 import { useSessionRecovery } from '../hooks/useSessionRecovery'
 import { useApiKeyStore } from '../store/apiKeyStore'
@@ -25,12 +26,14 @@ interface CapturedPhoto {
 export default function HomePage() {
   const navigate = useNavigate()
   const [triggerCapture, setTriggerCapture] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
   const [capturedFiles, setCapturedFiles] = useState<CapturedPhoto[]>([])
   const [pendingPreview, setPendingPreview] = useState<CapturedPhoto | null>(null)
   const { hasIncompleteSession, recoveryRoute, lineItemCount, peopleCount, discardSession } =
     useSessionRecovery()
   const hasApiKey = Boolean(useApiKeyStore((s) => s.apiKey))
   const triggerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hasMediaDevices = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
 
   // Revoke blob URLs and clear pending timers on unmount
   useEffect(() => {
@@ -42,9 +45,13 @@ export default function HomePage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleScanClick() {
-    setTriggerCapture(true)
-    if (triggerTimerRef.current) clearTimeout(triggerTimerRef.current)
-    triggerTimerRef.current = setTimeout(() => setTriggerCapture(false), 100)
+    if (hasMediaDevices) {
+      setShowCamera(true)
+    } else {
+      setTriggerCapture(true)
+      if (triggerTimerRef.current) clearTimeout(triggerTimerRef.current)
+      triggerTimerRef.current = setTimeout(() => setTriggerCapture(false), 100)
+    }
   }
 
   function handleCapture(file: File, previewUrl: string) {
@@ -89,6 +96,25 @@ export default function HomePage() {
 
   function handleManualEntry() {
     navigate('/editor')
+  }
+
+  // Show live camera preview
+  if (showCamera) {
+    return (
+      <CameraPreview
+        onCapture={(file, previewUrl) => {
+          setShowCamera(false)
+          setPendingPreview({ file, previewUrl })
+        }}
+        onClose={() => {
+          setShowCamera(false)
+          // Fall back to file input
+          setTriggerCapture(true)
+          if (triggerTimerRef.current) clearTimeout(triggerTimerRef.current)
+          triggerTimerRef.current = setTimeout(() => setTriggerCapture(false), 100)
+        }}
+      />
+    )
   }
 
   // Show image preview if a photo is pending review

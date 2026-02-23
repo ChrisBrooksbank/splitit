@@ -5,6 +5,9 @@ import {
   computeOtsuThreshold,
   otsuBinarize,
   sharpen,
+  medianFilter,
+  adaptiveThreshold,
+  detectSkewAngle,
 } from '../../src/services/ocr/imagePreprocessor'
 
 // ---------------------------------------------------------------------------
@@ -312,5 +315,173 @@ describe('sharpen', () => {
     for (let i = 0; i < width * height; i++) {
       expect(pixels[i * 4 + 3]).toBe(42)
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// medianFilter
+// ---------------------------------------------------------------------------
+describe('medianFilter', () => {
+  it('removes a single salt-and-pepper noise pixel', () => {
+    // 3x3 image: all gray=128 except center is 255 (salt noise)
+    const width = 3
+    const height = 3
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 128
+      pixels[i * 4 + 1] = 128
+      pixels[i * 4 + 2] = 128
+      pixels[i * 4 + 3] = 255
+    }
+    // Set center to 255 (noise)
+    const center = (1 * width + 1) * 4
+    pixels[center] = 255
+    pixels[center + 1] = 255
+    pixels[center + 2] = 255
+
+    medianFilter(pixels, width, height)
+    // Median of [128,128,128,128,255,128,128,128,128] sorted = 128
+    expect(pixels[center]).toBe(128)
+  })
+
+  it('leaves a uniform image unchanged in the interior', () => {
+    const width = 3
+    const height = 3
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 100
+      pixels[i * 4 + 1] = 100
+      pixels[i * 4 + 2] = 100
+      pixels[i * 4 + 3] = 255
+    }
+    medianFilter(pixels, width, height)
+    const center = (1 * width + 1) * 4
+    expect(pixels[center]).toBe(100)
+  })
+
+  it('preserves alpha channel', () => {
+    const width = 3
+    const height = 3
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 128
+      pixels[i * 4 + 1] = 128
+      pixels[i * 4 + 2] = 128
+      pixels[i * 4 + 3] = 42
+    }
+    medianFilter(pixels, width, height)
+    for (let i = 0; i < width * height; i++) {
+      expect(pixels[i * 4 + 3]).toBe(42)
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// adaptiveThreshold
+// ---------------------------------------------------------------------------
+describe('adaptiveThreshold', () => {
+  it('produces only 0 or 255 values', () => {
+    const width = 10
+    const height = 10
+    const count = width * height
+    const pixels = new Uint8ClampedArray(count * 4)
+    for (let i = 0; i < count; i++) {
+      const v = Math.floor(Math.random() * 256)
+      pixels[i * 4] = v
+      pixels[i * 4 + 1] = v
+      pixels[i * 4 + 2] = v
+      pixels[i * 4 + 3] = 255
+    }
+    adaptiveThreshold(pixels, width, height, 5, 5)
+    for (let i = 0; i < count; i++) {
+      expect([0, 255]).toContain(pixels[i * 4])
+    }
+  })
+
+  it('makes a bright pixel on dark background white', () => {
+    // 5x5 all dark (30) except center is bright (200)
+    const width = 5
+    const height = 5
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 30
+      pixels[i * 4 + 1] = 30
+      pixels[i * 4 + 2] = 30
+      pixels[i * 4 + 3] = 255
+    }
+    const center = (2 * width + 2) * 4
+    pixels[center] = 200
+    pixels[center + 1] = 200
+    pixels[center + 2] = 200
+
+    adaptiveThreshold(pixels, width, height, 5, 5)
+    // Center pixel is well above local mean → should be white
+    expect(pixels[center]).toBe(255)
+  })
+
+  it('handles a uniform image (all same value) as white', () => {
+    const width = 5
+    const height = 5
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 128
+      pixels[i * 4 + 1] = 128
+      pixels[i * 4 + 2] = 128
+      pixels[i * 4 + 3] = 255
+    }
+    adaptiveThreshold(pixels, width, height, 5, 10)
+    // pixel value (128) >= localMean (128) - C (10) = 118 → white
+    const center = (2 * width + 2) * 4
+    expect(pixels[center]).toBe(255)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// detectSkewAngle
+// ---------------------------------------------------------------------------
+describe('detectSkewAngle', () => {
+  it('returns ~0 for horizontal text lines', () => {
+    // Create a 100x100 image with horizontal dark lines at rows 20, 50, 80
+    const width = 100
+    const height = 100
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    // All white background
+    for (let i = 0; i < width * height; i++) {
+      pixels[i * 4] = 255
+      pixels[i * 4 + 1] = 255
+      pixels[i * 4 + 2] = 255
+      pixels[i * 4 + 3] = 255
+    }
+    // Dark horizontal lines
+    for (const row of [20, 50, 80]) {
+      for (let x = 10; x < 90; x++) {
+        const idx = (row * width + x) * 4
+        pixels[idx] = 0
+        pixels[idx + 1] = 0
+        pixels[idx + 2] = 0
+      }
+    }
+
+    const angle = detectSkewAngle(pixels, width, height)
+    // Should be very close to 0 (within ~1 degree = 0.017 rad)
+    expect(Math.abs(angle)).toBeLessThan(0.02)
+  })
+
+  it('returns angle in valid range (-5° to +5°)', () => {
+    const width = 100
+    const height = 100
+    const pixels = new Uint8ClampedArray(width * height * 4)
+    for (let i = 0; i < width * height; i++) {
+      const v = Math.random() > 0.7 ? 0 : 255
+      pixels[i * 4] = v
+      pixels[i * 4 + 1] = v
+      pixels[i * 4 + 2] = v
+      pixels[i * 4 + 3] = 255
+    }
+
+    const angle = detectSkewAngle(pixels, width, height)
+    const maxAngleRad = (5 * Math.PI) / 180
+    expect(angle).toBeGreaterThanOrEqual(-maxAngleRad)
+    expect(angle).toBeLessThanOrEqual(maxAngleRad)
   })
 })
