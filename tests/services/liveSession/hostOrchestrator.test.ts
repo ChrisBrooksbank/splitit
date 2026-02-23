@@ -191,6 +191,35 @@ describe('hostOrchestrator', () => {
       expect(useAssignmentStore.getState().assignments[itemId]).toEqual(['p1', 'p2'])
       expect(useAssignmentStore.getState().portions[itemId]).toEqual({ p1: 2, p2: 3 })
     })
+
+    it('handles ADD_PERSON message', () => {
+      const orchestrator = createHostOrchestrator(mockPeer)
+      orchestrator.start()
+
+      mockPeer.handlers['guest-message']('guest-1', {
+        type: 'ADD_PERSON',
+        name: 'Charlie',
+      })
+
+      const people = usePeopleStore.getState().people
+      expect(people).toHaveLength(1)
+      expect(people[0].name).toBe('Charlie')
+      expect(mockPeer.broadcastToAll).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'SYNC_STATE' })
+      )
+    })
+
+    it('ignores ADD_PERSON with empty name', () => {
+      const orchestrator = createHostOrchestrator(mockPeer)
+      orchestrator.start()
+
+      mockPeer.handlers['guest-message']('guest-1', {
+        type: 'ADD_PERSON',
+        name: '   ',
+      })
+
+      expect(usePeopleStore.getState().people).toHaveLength(0)
+    })
   })
 
   describe('advancePhase', () => {

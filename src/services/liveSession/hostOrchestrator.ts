@@ -86,6 +86,15 @@ export function createHostOrchestrator(peerService: RelayService) {
         debouncedBroadcast()
         break
       }
+
+      case 'ADD_PERSON': {
+        const name = message.name.trim()
+        if (name) {
+          usePeopleStore.getState().addPerson(name)
+          broadcastState()
+        }
+        break
+      }
     }
   }
 
@@ -118,6 +127,9 @@ export function createHostOrchestrator(peerService: RelayService) {
   const unsubTips = useTipStore.subscribe(() => {
     debouncedBroadcast()
   })
+  const unsubPeople = usePeopleStore.subscribe(() => {
+    debouncedBroadcast()
+  })
 
   const start = () => {
     peerService.on('guest-message', handleGuestMessage)
@@ -129,6 +141,7 @@ export function createHostOrchestrator(peerService: RelayService) {
     debouncedBroadcast.flush()
     unsubAssignments()
     unsubTips()
+    unsubPeople()
     peerService.off('guest-message', handleGuestMessage)
     peerService.off('guest-connected', handleGuestConnected)
     peerService.off('guest-disconnected', handleGuestDisconnected)

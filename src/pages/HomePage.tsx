@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Sparkles,
@@ -30,18 +30,21 @@ export default function HomePage() {
   const { hasIncompleteSession, recoveryRoute, lineItemCount, peopleCount, discardSession } =
     useSessionRecovery()
   const hasApiKey = Boolean(useApiKeyStore((s) => s.apiKey))
+  const triggerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Revoke blob URLs on unmount
+  // Revoke blob URLs and clear pending timers on unmount
   useEffect(() => {
     return () => {
       capturedFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl))
       if (pendingPreview) URL.revokeObjectURL(pendingPreview.previewUrl)
+      if (triggerTimerRef.current) clearTimeout(triggerTimerRef.current)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleScanClick() {
     setTriggerCapture(true)
-    setTimeout(() => setTriggerCapture(false), 100)
+    if (triggerTimerRef.current) clearTimeout(triggerTimerRef.current)
+    triggerTimerRef.current = setTimeout(() => setTriggerCapture(false), 100)
   }
 
   function handleCapture(file: File, previewUrl: string) {

@@ -32,6 +32,7 @@ export type GuestMessage =
       portions: Record<string, number>
     }
   | { type: 'SET_TIP'; personId: string; mode: 'percentage' | 'fixed'; value: number }
+  | { type: 'ADD_PERSON'; name: string }
 
 // Host -> Guest messages
 export type HostMessage =
