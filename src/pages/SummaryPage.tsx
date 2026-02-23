@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
 import { Copy, PlusCircle, QrCode, UserPlus } from 'lucide-react'
+import { buildShareText } from '../utils/buildShareText'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -93,44 +94,6 @@ const PersonSummaryCard = memo(function PersonSummaryCard({
 })
 
 // ---------------------------------------------------------------------------
-// Copy summary text builder
-// ---------------------------------------------------------------------------
-
-function buildCopyText(
-  people: Person[],
-  personTotals: PersonTotal[],
-  itemsByPerson: Map<string, { item: LineItem; shareCount: number }[]>,
-  grandTotal: number,
-  restaurantName?: string
-): string {
-  const dateStr = new Date().toLocaleDateString('en-GB', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-  const lines: string[] = ['SplitIt Summary']
-  lines.push(`${restaurantName ? `${restaurantName} - ` : ''}${dateStr}`)
-  lines.push('')
-
-  for (const person of people) {
-    const pt = personTotals.find((t) => t.personId === person.id)
-    if (!pt) continue
-    lines.push(`${person.name}: ${formatCurrency(pt.total)}`)
-    const items = itemsByPerson.get(person.id) ?? []
-    for (const { item, shareCount } of items) {
-      const itemTotal = Math.round((item.price * item.quantity) / shareCount)
-      const suffix = shareCount > 1 ? ` (÷${shareCount})` : ''
-      lines.push(`  - ${item.name}${suffix} (${formatCurrency(itemTotal)})`)
-    }
-    lines.push(`  - Tip (${pt.tipPercentage}%): ${formatCurrency(pt.tipAmount)}`)
-    lines.push('')
-  }
-
-  lines.push(`Total: ${formatCurrency(grandTotal)}`)
-  return lines.join('\n')
-}
-
-// ---------------------------------------------------------------------------
 // SummaryPage
 // ---------------------------------------------------------------------------
 
@@ -207,12 +170,14 @@ export default function SummaryPage() {
   }, [people, lineItems, assignments, splitResult.personTotals, saveSession])
 
   function handleCopySummary() {
-    const text = buildCopyText(
+    const text = buildShareText({
+      lineItems,
       people,
-      splitResult.personTotals,
-      itemsByPerson,
-      splitResult.grandTotal
-    )
+      assignments,
+      portions,
+      personTotals: splitResult.personTotals,
+      grandTotal: splitResult.grandTotal,
+    })
     navigator.clipboard.writeText(text).catch(() => {
       // Clipboard write failed silently — no destructive fallback
     })

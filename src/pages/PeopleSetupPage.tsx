@@ -4,6 +4,7 @@ import { UserPlus, ArrowRight, X, Wifi } from 'lucide-react'
 import { usePeopleStore } from '../store/peopleStore'
 import PersonChip from '../components/assignment/PersonChip'
 import StepIndicator from '../components/layout/StepIndicator'
+import CopySummaryButton from '../components/layout/CopySummaryButton'
 
 export default function PeopleSetupPage() {
   const navigate = useNavigate()
@@ -86,12 +87,17 @@ export default function PeopleSetupPage() {
 
       {/* Header */}
       <div className="px-4 pt-2 pb-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-          Who's at the table?
-        </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Add everyone splitting this bill. Minimum 2 people.
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              Who's at the table?
+            </h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Add everyone splitting this bill. Minimum 2 people.
+            </p>
+          </div>
+          <CopySummaryButton />
+        </div>
       </div>
 
       {/* Scrollable content */}

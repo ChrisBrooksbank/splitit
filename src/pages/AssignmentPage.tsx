@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, Users, UserPlus } from 'lucide-react'
+import CopySummaryButton from '../components/layout/CopySummaryButton'
 import { usePeopleStore } from '../store/peopleStore'
 import { useBillStore } from '../store/billStore'
 import { useAssignmentStore } from '../store/assignmentStore'
@@ -185,15 +186,20 @@ export default function AssignmentPage() {
 
         {/* Header */}
         <div className="px-4 pt-2 pb-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-            {claimedPersonIds.length === 0 ? 'First up' : 'Next up'}
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-            Who are you?
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Tap your name to start claiming your items.
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                {claimedPersonIds.length === 0 ? 'First up' : 'Next up'}
+              </p>
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+                Who are you?
+              </h1>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Tap your name to start claiming your items.
+              </p>
+            </div>
+            <CopySummaryButton />
+          </div>
         </div>
 
         {/* Connected guests (host in live session) */}
@@ -365,15 +371,18 @@ export default function AssignmentPage() {
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {claimedPersonIds.length + 1} of {people.length}
           </span>
-          {isLive && role === 'host' && roomCode && (
-            <button
-              onClick={() => setShowQR(true)}
-              className="ml-auto p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Show join QR code to invite others"
-            >
-              <UserPlus size={18} className="text-gray-500 dark:text-gray-400" />
-            </button>
-          )}
+          <div className="ml-auto flex items-center gap-1">
+            <CopySummaryButton />
+            {isLive && role === 'host' && roomCode && (
+              <button
+                onClick={() => setShowQR(true)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Show join QR code to invite others"
+              >
+                <UserPlus size={18} className="text-gray-500 dark:text-gray-400" />
+              </button>
+            )}
+          </div>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           {currentPerson.name}'s items
