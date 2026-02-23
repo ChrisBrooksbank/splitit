@@ -290,6 +290,33 @@ describe('RelayService', () => {
         displayName: 'Alice',
       })
     })
+
+    it('emits guest-message on RELAY with valid ADD_PERSON message', async () => {
+      const guestMessage = vi.fn()
+      service.on('guest-message', guestMessage)
+
+      const promise = service.startHost()
+      await waitForCreateRoom()
+
+      mockWsInstance!.receiveMessage({
+        type: 'ROOM_CREATED',
+        roomCode: 'HOST01',
+        peerId: 'host-1',
+      })
+
+      await promise
+
+      mockWsInstance!.receiveMessage({
+        type: 'RELAY',
+        from: 'guest-1',
+        payload: { type: 'ADD_PERSON', name: 'Charlie' },
+      })
+
+      expect(guestMessage).toHaveBeenCalledWith('guest-1', {
+        type: 'ADD_PERSON',
+        name: 'Charlie',
+      })
+    })
   })
 
   describe('guest message handling', () => {

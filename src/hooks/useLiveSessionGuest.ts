@@ -172,6 +172,12 @@ export function useLiveSessionGuest(roomCode: string) {
     }
   }, [])
 
+  const sendAddPerson = useCallback((name: string) => {
+    const peer = useLiveSessionStore.getState().peerService
+    if (!peer?.isConnected()) return
+    peer.sendToHost({ type: 'ADD_PERSON', name })
+  }, [])
+
   return {
     connectionStatus,
     statusMessage,
@@ -184,5 +190,6 @@ export function useLiveSessionGuest(roomCode: string) {
     sendUnclaim,
     sendSetAssignees,
     sendTip,
+    sendAddPerson,
   }
 }

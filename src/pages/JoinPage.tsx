@@ -21,9 +21,12 @@ export default function JoinPage() {
     sendUnclaim,
     sendSetAssignees,
     sendTip,
+    sendAddPerson,
   } = useLiveSessionGuest(roomCode ?? '')
 
   const [showQR, setShowQR] = useState(false)
+  const [newPersonName, setNewPersonName] = useState('')
+  const [showAddPerson, setShowAddPerson] = useState(false)
   const joinUrl = roomCode ? `${window.location.origin}/join/${roomCode}` : ''
 
   const isReconnecting = connectionStatus === 'reconnecting'
@@ -157,6 +160,58 @@ export default function JoinPage() {
               </button>
             )
           })}
+        </div>
+
+        {/* Add person */}
+        <div className="mt-4">
+          {showAddPerson ? (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newPersonName}
+                onChange={(e) => setNewPersonName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    const name = newPersonName.trim()
+                    if (name) {
+                      sendAddPerson(name)
+                      setNewPersonName('')
+                      setShowAddPerson(false)
+                    }
+                  }
+                }}
+                placeholder="Name"
+                aria-label="New person's name"
+                maxLength={40}
+                autoFocus
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent"
+              />
+              <button
+                onClick={() => {
+                  const name = newPersonName.trim()
+                  if (name) {
+                    sendAddPerson(name)
+                    setNewPersonName('')
+                    setShowAddPerson(false)
+                  }
+                }}
+                disabled={!newPersonName.trim()}
+                className="px-5 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Add
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAddPerson(true)}
+              className="w-full py-3 px-4 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-sm font-medium rounded-2xl active:scale-95 transition-transform"
+              aria-label="Add a new person to the session"
+            >
+              <UserPlus size={16} className="inline -mt-0.5 mr-1.5" />
+              Not on the list? Add yourself
+            </button>
+          )}
         </div>
       </div>
     )

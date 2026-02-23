@@ -452,6 +452,8 @@ export class RelayService {
         )
       case 'SET_TIP':
         return typeof msg.personId === 'string' && typeof msg.value === 'number'
+      case 'ADD_PERSON':
+        return typeof msg.name === 'string' && msg.name.trim().length > 0
       default:
         return false
     }

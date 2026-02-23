@@ -148,6 +148,23 @@ describe('useLiveSessionGuest', () => {
     expect(useLiveSessionStore.getState().phase).toBe('claiming')
   })
 
+  it('sendAddPerson sends ADD_PERSON message', async () => {
+    const { result } = renderHook(() => useLiveSessionGuest('room-123'))
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    act(() => {
+      result.current.sendAddPerson('Charlie')
+    })
+
+    expect(mockSendToHost).toHaveBeenCalledWith({
+      type: 'ADD_PERSON',
+      name: 'Charlie',
+    })
+  })
+
   it('cleans up on unmount', async () => {
     const { unmount } = renderHook(() => useLiveSessionGuest('room-123'))
 
