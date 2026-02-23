@@ -258,8 +258,20 @@ function extractLineItem(line: string): LineItem | null {
   // Check if line has a leading negative sign (discount/refund)
   const isNegative = /^-/.test(priceMatch[0].trim())
 
-  const cents = parsePriceCents(rawPriceStr)
+  let cents = parsePriceCents(rawPriceStr)
   if (cents === null || (cents <= 0 && !isNegative)) return null
+
+  // Detect misread currency symbol: £ can be OCR'd as 1/l/I, turning
+  // e.g. £16.50 into 116.50. If no currency symbol found and the price
+  // is >= £100 (10000 cents) with a leading 1/l/I, strip it.
+  let hadCurrencyFix = false
+  if (!hasCurrencySymbol && !isNegative && cents >= 10000 && /^[1lI]/.test(rawPriceStr)) {
+    const strippedCents = parsePriceCents(rawPriceStr.slice(1))
+    if (strippedCents !== null && strippedCents > 0) {
+      cents = strippedCents
+      hadCurrencyFix = true
+    }
+  }
 
   const finalCents = isNegative ? -Math.abs(cents) : cents
 
@@ -285,7 +297,7 @@ function extractLineItem(line: string): LineItem | null {
 
   // Confidence: high if $ present, medium if plain number, low if OCR fix applied
   let confidence = hasCurrencySymbol ? HIGH_CONFIDENCE : MEDIUM_CONFIDENCE
-  if (hadOcrFix) confidence = LOW_CONFIDENCE
+  if (hadOcrFix || hadCurrencyFix) confidence = LOW_CONFIDENCE
 
   // The price on the receipt line is the line total (e.g. "2 X Soup  16.00"
   // means 16.00 for both soups). Divide by quantity to get the unit price,

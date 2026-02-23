@@ -123,6 +123,32 @@ TOTAL               $27.53
     expect(bread?.price).toBe(400)
   })
 
+  // --- Sample 3b: Misread £ as 1 (currency symbol OCR error) ---
+  it('corrects misread £ as leading 1 in prices', () => {
+    const text = `
+Soup of the Day            £ 6.50
+3x Peroni 330ml            116.50
+Sirloin Steak              124.95
+Flat White                 £ 3.80
+
+SUBTOTAL                   £51.25
+`
+    const result = parseReceipt(text)
+    // Peroni: 116.50 → stripped to 16.50 (£ misread as 1)
+    const peroni = result.lineItems.find((i) => i.name.includes('Peroni'))
+    expect(peroni?.price).toBe(550) // 16.50 / 3 = 5.50 per unit
+    expect(peroni?.quantity).toBe(3)
+    expect(peroni?.confidence).toBe(0.5) // LOW — OCR fix applied
+    // Steak: 124.95 → stripped to 24.95 (£ misread as 1)
+    const steak = result.lineItems.find((i) => i.name.includes('Steak'))
+    expect(steak?.price).toBe(2495)
+    expect(steak?.confidence).toBe(0.5)
+    // Items with actual £ symbol are not affected
+    const soup = result.lineItems.find((i) => i.name.includes('Soup'))
+    expect(soup?.price).toBe(650)
+    expect(soup?.confidence).toBe(1.0)
+  })
+
   // --- Sample 4: Separator lines and noise ---
   it('skips separator and noise lines', () => {
     const text = `
