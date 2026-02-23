@@ -27,7 +27,7 @@ export default function StepIndicator({ currentRoute }: StepIndicatorProps) {
   if (currentIndex === -1) return null
 
   return (
-    <nav aria-label="Progress" className="flex items-center justify-center gap-0 px-4 pr-28 py-3">
+    <nav aria-label="Progress" className="flex items-center justify-center gap-0 px-4 pr-20 py-3">
       {STEPS.map((step, index) => {
         const isCompleted = index < currentIndex
         const isCurrent = index === currentIndex

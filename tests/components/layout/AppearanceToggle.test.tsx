@@ -9,29 +9,32 @@ beforeEach(() => {
 })
 
 describe('AppearanceToggle', () => {
-  it('renders 3 radio buttons', () => {
+  it('renders theme cycle button', () => {
     render(<AppearanceToggle />)
-    const radios = screen.getAllByRole('radio')
-    expect(radios).toHaveLength(3)
+    expect(screen.getByRole('button', { name: /theme/i })).toBeInTheDocument()
   })
 
-  it('has system checked by default', () => {
-    render(<AppearanceToggle />)
-    expect(screen.getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true')
-  })
-
-  it('updates preference to dark on click', async () => {
+  it('cycles from system to light on click', async () => {
     const user = userEvent.setup()
     render(<AppearanceToggle />)
-    await user.click(screen.getByRole('radio', { name: 'Dark' }))
+    await user.click(screen.getByRole('button', { name: /theme/i }))
+    expect(useAppearanceStore.getState().preference).toBe('light')
+  })
+
+  it('cycles from light to dark on click', async () => {
+    useAppearanceStore.setState({ preference: 'light' })
+    const user = userEvent.setup()
+    render(<AppearanceToggle />)
+    await user.click(screen.getByRole('button', { name: /theme/i }))
     expect(useAppearanceStore.getState().preference).toBe('dark')
   })
 
-  it('updates preference to light on click', async () => {
+  it('cycles from dark to system on click', async () => {
+    useAppearanceStore.setState({ preference: 'dark' })
     const user = userEvent.setup()
     render(<AppearanceToggle />)
-    await user.click(screen.getByRole('radio', { name: 'Light' }))
-    expect(useAppearanceStore.getState().preference).toBe('light')
+    await user.click(screen.getByRole('button', { name: /theme/i }))
+    expect(useAppearanceStore.getState().preference).toBe('system')
   })
 
   it('increases font size on A+ click', async () => {

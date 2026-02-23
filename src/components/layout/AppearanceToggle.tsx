@@ -1,10 +1,11 @@
 import { useAppearanceStore } from '../../store/appearanceStore'
 import type { ThemePreference } from '../../store/appearanceStore'
 
-const themeOptions: { value: ThemePreference; label: string; icon: React.ReactNode }[] = [
-  {
-    value: 'light',
-    label: 'Light',
+const themeCycle: ThemePreference[] = ['light', 'dark', 'system']
+
+const themeIcons: Record<ThemePreference, { label: string; icon: React.ReactNode }> = {
+  light: {
+    label: 'Theme: Light (tap for Dark)',
     icon: (
       <svg
         width="16"
@@ -22,9 +23,26 @@ const themeOptions: { value: ThemePreference; label: string; icon: React.ReactNo
       </svg>
     ),
   },
-  {
-    value: 'system',
-    label: 'System',
+  dark: {
+    label: 'Theme: Dark (tap for System)',
+    icon: (
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M13.5 9.2A5.5 5.5 0 1 1 6.8 2.5 4.5 4.5 0 0 0 13.5 9.2Z" />
+      </svg>
+    ),
+  },
+  system: {
+    label: 'Theme: System (tap for Light)',
     icon: (
       <svg
         width="16"
@@ -42,29 +60,18 @@ const themeOptions: { value: ThemePreference; label: string; icon: React.ReactNo
       </svg>
     ),
   },
-  {
-    value: 'dark',
-    label: 'Dark',
-    icon: (
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M13.5 9.2A5.5 5.5 0 1 1 6.8 2.5 4.5 4.5 0 0 0 13.5 9.2Z" />
-      </svg>
-    ),
-  },
-]
+}
 
 export default function AppearanceToggle() {
   const { preference, setPreference, fontSize, setFontSize } = useAppearanceStore()
+
+  function cycleTheme() {
+    const currentIdx = themeCycle.indexOf(preference)
+    const nextIdx = (currentIdx + 1) % themeCycle.length
+    setPreference(themeCycle[nextIdx])
+  }
+
+  const current = themeIcons[preference]
 
   return (
     <div className="inline-flex items-center rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-0.5 shadow-sm">
@@ -89,28 +96,13 @@ export default function AppearanceToggle() {
 
       <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-0.5" />
 
-      <div role="radiogroup" aria-label="Theme preference" className="inline-flex">
-        {themeOptions.map((opt) => {
-          const isActive = preference === opt.value
-          return (
-            <button
-              key={opt.value}
-              role="radio"
-              aria-checked={isActive}
-              aria-label={opt.label}
-              onClick={() => setPreference(opt.value)}
-              className={[
-                'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                isActive
-                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
-              ].join(' ')}
-            >
-              {opt.icon}
-            </button>
-          )
-        })}
-      </div>
+      <button
+        aria-label={current.label}
+        onClick={cycleTheme}
+        className="flex items-center justify-center w-8 h-8 rounded-md transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+      >
+        {current.icon}
+      </button>
     </div>
   )
 }
