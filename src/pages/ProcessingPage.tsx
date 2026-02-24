@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { preprocessImage } from '../services/ocr/imagePreprocessor'
 import { recognize } from '../services/ocr/tesseractService'
-import { createThumbnailDataUrl, storeReceiptPhotos } from '../utils/photoThumbnail'
+import {
+  createThumbnailDataUrl,
+  createViewableDataUrl,
+  storeReceiptPhotos,
+  storeReceiptViewPhotos,
+} from '../utils/photoThumbnail'
 
 export default function ProcessingPage() {
   const navigate = useNavigate()
@@ -98,6 +103,14 @@ export default function ProcessingPage() {
         storeReceiptPhotos(thumbs)
       } catch {
         // Non-critical — history just won't have photos
+      }
+
+      // Save viewable-size photos for cross-checking during editing
+      try {
+        const views = await Promise.all(originalFiles.map((file) => createViewableDataUrl(file)))
+        storeReceiptViewPhotos(views)
+      } catch {
+        // Non-critical — viewer just won't be available
       }
 
       setProgress(1)

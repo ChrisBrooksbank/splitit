@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
-import { ArrowRight, QrCode } from 'lucide-react'
+import { ArrowRight, QrCode, Camera } from 'lucide-react'
 import { useBillStore } from '../store/billStore'
 import { useHistoryStore } from '../store/historyStore'
 import CopySummaryButton from '../components/layout/CopySummaryButton'
 import { parseReceipt, mergeReceipts, type ParsedReceipt } from '../services/ocr/receiptParser'
-import { peekReceiptPhotos } from '../utils/photoThumbnail'
+import { peekReceiptPhotos, peekReceiptViewPhotos } from '../utils/photoThumbnail'
+import ReceiptPhotoViewer from '../components/receipt/ReceiptPhotoViewer'
 import LineItemList from '../components/bill/LineItemList'
 import BillSummaryCard from '../components/bill/BillSummaryCard'
 import StepIndicator from '../components/layout/StepIndicator'
@@ -70,6 +71,8 @@ export default function ItemEditorPage() {
   const { saveSession } = useHistoryStore()
   const didInit = useRef(false)
   const sessionIdRef = useRef(sessionStorage.getItem('draftSessionId') ?? nanoid())
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false)
+  const [viewPhotos] = useState(() => peekReceiptViewPhotos())
 
   // Lazy-initialize OCR-derived state (runs once, during first render)
   const [ocrInit] = useState(() => {
@@ -139,6 +142,15 @@ export default function ItemEditorPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+          {viewPhotos && viewPhotos.length > 0 && (
+            <button
+              onClick={() => setShowPhotoViewer(true)}
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-95 transition-transform flex-shrink-0"
+              aria-label="View receipt photos"
+            >
+              <Camera size={20} className="text-gray-700 dark:text-gray-300" />
+            </button>
+          )}
           <CopySummaryButton />
           {lineItems.length > 0 && (
             <button
@@ -200,6 +212,11 @@ export default function ItemEditorPage() {
           </button>
         </div>
       </div>
+
+      {/* Receipt photo viewer modal */}
+      {showPhotoViewer && viewPhotos && (
+        <ReceiptPhotoViewer photos={viewPhotos} onClose={() => setShowPhotoViewer(false)} />
+      )}
     </div>
   )
 }
