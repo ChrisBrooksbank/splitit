@@ -32,6 +32,11 @@ describe('HomePage', () => {
     expect(screen.getByText('SplitIt')).toBeInTheDocument()
   })
 
+  it('states the UK GBP scope', () => {
+    renderHomePage()
+    expect(screen.getByText(/made for uk bills in gbp/i)).toBeInTheDocument()
+  })
+
   it('renders Scan a Bill button', () => {
     renderHomePage()
     expect(screen.getByRole('button', { name: /scan a bill/i })).toBeInTheDocument()

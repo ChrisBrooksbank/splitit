@@ -2,9 +2,9 @@
  * Regex patterns for parsing restaurant receipt OCR text.
  */
 
-// Price at the end of a line: $12.99, 12.99, $1,234.56, -$2.00
+// Price at the end of a line: £12.99, 12.99, £1,234.56, -£2.00
 // Also allows leading OCR-corrupted digits (l/I in place of 1): $l2.99
-export const PRICE_PATTERN = /-?\s*[£$€]?\s*([lIO\d]{1,4}[,.]?[lIO\d]{0,3}[.,][lIO\d]{2})\s*$/
+export const PRICE_PATTERN = /-?\s*[£$€]?\s*([lIoO\d]{1,4}[,.]?[lIoO\d]{0,3}[.,][lIoO\d]{2})\s*$/
 
 // Price with possible OCR digit errors (l/I → 1, O/o → 0) before parsing
 // Applied to a candidate price string only
@@ -14,6 +14,10 @@ export const OCR_ZERO_FIX = /[Oo]/g // replace with '0'
 // Quantity prefix patterns at the start of an item name:
 //   "2x", "3 X", "2 ×", "3x ", "2 x "
 export const QUANTITY_PATTERN = /^(\d+)\s*[xX×]\s+/
+
+// Quantity column at the start of a receipt row:
+//   "2 OLD MOUT 13.00", "1 28OZ STRAWB 8.90"
+export const QUANTITY_COLUMN_PATTERN = /^(\d{1,2})\s+(?=\S)/
 
 // Modifier/add-on lines: 2+ spaces of indent followed by -/+/*
 export const MODIFIER_PATTERN = /^\s{2,}[-+*]\s+/
@@ -38,6 +42,7 @@ export const SKIP_PATTERNS: RegExp[] = [
   /^\s*\*+\s*$/, // lines of only asterisks
   /^\s*$/, // blank lines
   /^\s*[-–—*]+\s+[A-Z][A-Z\s&]+\s*[-–—*]*\s*$/, // Section headers: - STARTERS -, * MAINS *
+  /^\s*(?:food|drink|drinks)\s+[£$€]?\s*\d+[.,]\d{2}\s*$/i, // UK category subtotals: DRINK 28.10
 ]
 
 // Metadata line patterns — these lines are not items but carry totals
@@ -51,7 +56,7 @@ export const METADATA_PATTERNS: {
     pattern: /\b(?:tax|hst|gst|pst|vat|sales\s*tax|state\s*tax|city\s*tax)\b/i,
   },
   { key: 'total', pattern: /\b(?:total|grand\s*total|amount\s*due|balance\s*due|total\s*due)\b/i },
-  { key: 'tip', pattern: /\b(?:tip|gratuity|svc\s*charge|service\s*charge)\b/i },
+  { key: 'tip', pattern: /\b(?:tip|gratuity|svc\s*charge|service(?:\s*charge)?)\b/i },
   {
     key: 'payment',
     pattern: /\b(?:cash|credit|debit|visa|mastercard|amex|discover|card|payment|paid)\b/i,

@@ -11,6 +11,8 @@ const JSON_HEADERS = {
   'Content-Type': 'application/json',
 }
 
+const ANTHROPIC_MODEL = 'claude-sonnet-4-6'
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -116,7 +118,7 @@ async function callAnthropic({ images, apiKey, prompt }: AiReceiptRequest): Prom
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: ANTHROPIC_MODEL,
       max_tokens: 2000,
       messages: [
         {

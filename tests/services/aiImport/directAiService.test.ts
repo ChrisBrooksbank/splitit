@@ -45,7 +45,8 @@ describe('processReceiptWithAi', () => {
     expect(body.provider).toBe('openai')
     expect(body.apiKey).toBe('sk-test-key')
     expect(body.images).toEqual(['data:image/jpeg;base64,dGVzdA=='])
-    expect(body.prompt).toContain('Read these restaurant bill/receipt photos')
+    expect(body.prompt).toContain('UK restaurant bill/receipt photos')
+    expect(body.prompt).toContain('Currency is GBP')
 
     expect(result).toBe('{"items":[{"name":"Beer","price":5.00,"qty":1}]}')
   })

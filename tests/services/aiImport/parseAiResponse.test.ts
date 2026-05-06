@@ -90,4 +90,31 @@ describe('parseAiResponse', () => {
     expect(result[1].price).toBe(225) // 450 / 2
     expect(result[2].price).toBe(67) // 200 / 3 = 66.67 → 67
   })
+
+  it('accepts GBP string prices and strips quantity prefixes from names', () => {
+    const input = JSON.stringify({
+      items: [{ name: '2x Lager', price: '£11.00', qty: 2 }],
+    })
+    const result = parseAiResponse(input)
+    expect(result[0].name).toBe('Lager')
+    expect(result[0].price).toBe(550)
+    expect(result[0].quantity).toBe(2)
+  })
+
+  it('filters metadata lines if the AI includes them', () => {
+    const input = JSON.stringify({
+      items: [
+        { name: 'Fish & Chips', price: 15.95, qty: 1 },
+        { name: 'VAT Included', price: 8.85, qty: 1 },
+        { name: '12.5% Service Charge', price: 6.64, qty: 1 },
+        { name: 'DRINK', price: 28.1, qty: 1 },
+        { name: 'FOOD', price: 50.8, qty: 1 },
+        { name: 'Total', price: 59.74, qty: 1 },
+        { name: '10% Loyalty Discount', price: -2.46, qty: 1 },
+      ],
+    })
+    const result = parseAiResponse(input)
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('Fish & Chips')
+  })
 })

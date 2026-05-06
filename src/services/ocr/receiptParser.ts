@@ -12,6 +12,7 @@ import { nanoid } from 'nanoid'
 import type { LineItem } from '../../types'
 import {
   PRICE_PATTERN,
+  QUANTITY_COLUMN_PATTERN,
   QUANTITY_PATTERN,
   SKIP_PATTERNS,
   METADATA_PATTERNS,
@@ -28,8 +29,8 @@ export interface ParsedReceipt {
 }
 
 /** Confidence thresholds */
-const HIGH_CONFIDENCE = 1.0 // explicit $ prefix + standard format
-const MEDIUM_CONFIDENCE = 0.75 // no $ prefix but clean number
+const HIGH_CONFIDENCE = 1.0 // explicit currency prefix + standard format
+const MEDIUM_CONFIDENCE = 0.75 // no currency prefix but clean number
 const LOW_CONFIDENCE = 0.5 // had OCR digit fixes applied
 
 /**
@@ -279,8 +280,9 @@ function extractLineItem(line: string): LineItem | null {
   const nameRaw = line.slice(0, line.length - priceMatch[0].length).trim()
   if (nameRaw.length === 0) return null
 
-  // Extract quantity prefix (e.g. "2x ", "3 X ")
-  const qtyMatch = nameRaw.match(QUANTITY_PATTERN)
+  // Extract quantity prefix (e.g. "2x ", "3 X ") or common receipt quantity column
+  // (e.g. "2 Lager  11.00"). The receipt price is treated as the line total.
+  const qtyMatch = nameRaw.match(QUANTITY_PATTERN) ?? nameRaw.match(QUANTITY_COLUMN_PATTERN)
   let quantity = 1
   let name = nameRaw
 

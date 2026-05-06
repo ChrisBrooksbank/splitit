@@ -3,7 +3,7 @@ import type { LineItem } from '../../types'
 
 interface AiItem {
   name: string
-  price: number
+  price: number | string
   qty?: number
 }
 
@@ -34,11 +34,15 @@ export function parseAiResponse(text: string): LineItem[] {
     )
   }
 
-  if (parsed.items.length === 0) {
+  const items = parsed.items
+    .map(normalizeAiItem)
+    .filter((item): item is NormalizedAiItem => item !== null)
+
+  if (items.length === 0) {
     throw new Error('No items found in the AI response.')
   }
 
-  return parsed.items.map((item) => {
+  return items.map((item) => {
     const qty = typeof item.qty === 'number' && item.qty >= 1 ? Math.round(item.qty) : 1
     const lineTotalPence = Math.round(item.price * 100)
     const unitPricePence = Math.round(lineTotalPence / qty)
@@ -52,6 +56,47 @@ export function parseAiResponse(text: string): LineItem[] {
       manuallyEdited: false,
     }
   })
+}
+
+interface NormalizedAiItem {
+  name: string
+  price: number
+  qty?: number
+}
+
+const NON_ITEM_NAME_PATTERN =
+  /\b(?:sub\s*total|subtotal|total|balance|amount\s*due|vat|tax|service|svc|gratuity|tip|discount|voucher|coupon|promo|loyalty|card|cash|visa|mastercard|amex|change|payment|paid)\b/i
+const CATEGORY_TOTAL_NAME_PATTERN = /^(?:FOOD|DRINK|DRINKS)$/
+
+function normalizeAiItem(item: AiItem): NormalizedAiItem | null {
+  const name = item.name
+    .trim()
+    .replace(/^\d+\s*x\s+/i, '')
+    .trim()
+  const price = normalizePrice(item.price)
+
+  if (
+    name.length === 0 ||
+    NON_ITEM_NAME_PATTERN.test(name) ||
+    CATEGORY_TOTAL_NAME_PATTERN.test(name.trim())
+  ) {
+    return null
+  }
+  if (price === null || price <= 0) return null
+
+  return { name, price, qty: item.qty }
+}
+
+function normalizePrice(price: number | string): number | null {
+  if (typeof price === 'number') {
+    return Number.isFinite(price) ? price : null
+  }
+
+  const normalized = price.replace(/[£,\s]/g, '')
+  if (!/^-?\d+(?:\.\d{1,2})?$/.test(normalized)) return null
+
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 function stripCodeFences(text: string): string {
@@ -72,6 +117,7 @@ function isAiResponse(value: unknown): value is AiResponse {
       typeof item === 'object' &&
       item !== null &&
       typeof (item as Record<string, unknown>).name === 'string' &&
-      typeof (item as Record<string, unknown>).price === 'number'
+      (typeof (item as Record<string, unknown>).price === 'number' ||
+        typeof (item as Record<string, unknown>).price === 'string')
   )
 }

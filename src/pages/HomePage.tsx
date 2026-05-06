@@ -116,6 +116,9 @@ export default function HomePage() {
             <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
               {capturedFiles.length} photo{capturedFiles.length !== 1 ? 's' : ''} captured
             </p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              SplitIt reads UK bills in GBP
+            </p>
           </div>
 
           {/* Photo thumbnails strip */}
@@ -174,6 +177,7 @@ export default function HomePage() {
           <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
             Split the bill, not the friendship
           </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Made for UK bills in GBP</p>
         </div>
 
         {/* Session recovery banner */}

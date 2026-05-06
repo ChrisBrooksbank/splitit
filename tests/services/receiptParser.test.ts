@@ -46,6 +46,10 @@ describe('parsePriceCents', () => {
   it('fixes mixed OCR errors in decimal: lO.5O → 1050', () => {
     expect(parsePriceCents('lO.5O')).toBe(1050)
   })
+
+  it('fixes lowercase OCR o in prices', () => {
+    expect(parsePriceCents('4.oo')).toBe(400)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -399,6 +403,69 @@ Total                      £52.14
     expect(result.detectedSubtotal).toBe(4345)
     expect(result.detectedTax).toBe(869)
     expect(result.detectedTotal).toBe(5214)
+  })
+
+  it('parses UK receipt quantity columns and excludes service/category totals', () => {
+    const text = `
+THE RED LION
+Table 7
+
+2 OLD MOUT STRAWBERRY APPLE      13.00
+1 28OZ STRAWB                     8.90
+1 ADD WHIPPED CREAM               0.50
+1 LARGE TATER TOTS                6.00
+1 CHEESEBURGER                   11.90
+DRINK                            21.90
+FOOD                             18.40
+SUBTOTAL                         40.30
+SERVICE %10.00                    4.03
+TOTAL                            44.33
+`
+    const result = parseReceipt(text)
+
+    expect(result.lineItems.map((item) => item.name)).toEqual([
+      'OLD MOUT STRAWBERRY APPLE',
+      '28OZ STRAWB',
+      'ADD WHIPPED CREAM',
+      'LARGE TATER TOTS',
+      'CHEESEBURGER',
+    ])
+    expect(result.lineItems[0].quantity).toBe(2)
+    expect(result.lineItems[0].price).toBe(650)
+    expect(result.lineItems.find((item) => item.name === 'DRINK')).toBeUndefined()
+    expect(result.lineItems.find((item) => item.name === 'FOOD')).toBeUndefined()
+    expect(result.lineItems.find((item) => item.name.includes('SERVICE'))).toBeUndefined()
+    expect(result.detectedSubtotal).toBe(4030)
+    expect(result.detectedTotal).toBe(4433)
+  })
+
+  it('handles real-style UK service wording without creating service items', () => {
+    const text = `
+SPARKLING WATER                  3.75
+MORETTI PINT                     5.25
+ENGLISH GARDEN                   8.50
+MORETTI PINT                     5.25
+SODA & LIME                      2.50
+FLAT WHITE                       2.85
+DRINK                           28.10
+CHICKEN GOUJONS                  6.95
+GARLIC TIGER PRAWNS              9.95
+CHICKEN HAM PIE                 14.95
+CHKEN STEAK FAJITAS             18.95
+FOOD                            50.80
+SUBTOTAL                        78.90
+SERVICE %10.00                   7.89
+TOTAL                           86.79
+SERVICE NOT INCLUDED
+`
+    const result = parseReceipt(text)
+
+    expect(result.lineItems).toHaveLength(10)
+    expect(result.lineItems.some((item) => ['DRINK', 'FOOD'].includes(item.name))).toBe(false)
+    expect(result.lineItems.some((item) => item.name.includes('SERVICE'))).toBe(false)
+    expect(result.detectedSubtotal).toBe(7890)
+    expect(result.detectedTotal).toBe(8679)
+    expect(result.validationWarnings).toHaveLength(0)
   })
 })
 

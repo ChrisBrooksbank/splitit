@@ -13,21 +13,11 @@ import {
 } from 'lucide-react'
 import { parseAiResponse } from '../services/aiImport/parseAiResponse'
 import { processReceiptWithAi } from '../services/aiImport/directAiService'
+import { AI_RECEIPT_PROMPT } from '../services/aiImport/receiptPrompt'
 import { useBillStore } from '../store/billStore'
 import { useApiKeyStore, type AiProvider } from '../store/apiKeyStore'
 import ImageCapture from '../components/camera/ImageCapture'
 import { createThumbnailDataUrl, storeReceiptPhotos } from '../utils/photoThumbnail'
-
-const PROMPT = `Read these restaurant bill/receipt photos and extract every line item. If there are multiple photos, they are parts of the same bill — combine them into one list and remove any duplicates from overlapping sections. Return ONLY a JSON object in this exact format, no other text:
-
-{"items":[{"name":"Item Name","price":12.99,"qty":1}]}
-
-Rules:
-- price = the LINE TOTAL in £ as shown on the receipt (e.g. "2x Beer £11.00" → price: 11.00, qty: 2)
-- qty = quantity (default 1)
-- Omit subtotals, tax, tips, totals, payment lines — only food/drink items
-- Use the exact item names from the receipt
-- price is a number with 2 decimal places, in pounds sterling (not a string, no £ symbol)`
 
 interface CapturedPhoto {
   file: File
@@ -67,7 +57,7 @@ export default function AiAssistPage() {
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(PROMPT)
+      await navigator.clipboard.writeText(AI_RECEIPT_PROMPT)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -166,6 +156,7 @@ export default function AiAssistPage() {
               ? 'Take a photo and items will be extracted automatically'
               : 'Use ChatGPT or Claude to read your bill photo'}
           </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Built for UK bills in GBP</p>
         </div>
 
         {hasKey ? (

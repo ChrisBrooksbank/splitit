@@ -1,19 +1,9 @@
 import type { AiProvider } from '../../store/apiKeyStore'
+import { AI_RECEIPT_PROMPT } from './receiptPrompt'
 
 const MAX_RAW_IMAGE_BYTES = 1_500_000
 const MAX_AI_IMAGE_SIZE = 1400
 const AI_JPEG_QUALITY = 0.75
-
-const PROMPT = `Read these restaurant bill/receipt photos and extract every line item. If there are multiple photos, they are parts of the same bill — combine them into one list and remove any duplicates from overlapping sections. Return ONLY a JSON object in this exact format, no other text:
-
-{"items":[{"name":"Item Name","price":12.99,"qty":1}]}
-
-Rules:
-- price = the LINE TOTAL in £ as shown on the receipt (e.g. "2x Beer £11.00" → price: 11.00, qty: 2)
-- qty = quantity (default 1)
-- Omit subtotals, tax, tips, totals, payment lines — only food/drink items
-- Use the exact item names from the receipt
-- price is a number with 2 decimal places, in pounds sterling (not a string, no £ symbol)`
 
 async function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -81,7 +71,7 @@ export async function processReceiptWithAi(
       provider: inferredProvider,
       apiKey,
       images: base64Images,
-      prompt: PROMPT,
+      prompt: AI_RECEIPT_PROMPT,
     }),
   })
 
