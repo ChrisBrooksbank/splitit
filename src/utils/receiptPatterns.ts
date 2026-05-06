@@ -31,6 +31,8 @@ export const SKIP_PATTERNS: RegExp[] = [
   /\b(?:www\.|https?:\/\/)/i, // URLs / website
   /^\s*\d{1,2}[/:]\d{2}(?:[/:]\d{2,4})?\s*(?:am|pm)?\s*$/i, // time-only lines
   /^\s*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\s*$/, // date-only lines
+  /^\s*date\s*[:#]?\s*\d/i, // DATE: 06/05/2026
+  /^\s*time\s*[:#]?\s*\d/i, // TIME: 19:42
   /table\s*#?\s*\d+/i, // TABLE #12
   /server\s*[:#]?\s*\w+/i, // SERVER: Jane
   /cashier\s*[:#]?\s*\w+/i, // CASHIER: 42
@@ -59,7 +61,8 @@ export const METADATA_PATTERNS: {
   { key: 'tip', pattern: /\b(?:tip|gratuity|svc\s*charge|service(?:\s*charge)?)\b/i },
   {
     key: 'payment',
-    pattern: /\b(?:cash|credit|debit|visa|mastercard|amex|discover|card|payment|paid)\b/i,
+    pattern:
+      /\b(?:cash|credit|debit|visa|mastercard|amex|discover|card|contactless|payment|paid)\b/i,
   },
   { key: 'change', pattern: /\b(?:change|change\s*due)\b/i },
   { key: 'discount', pattern: /\b(?:discount|coupon|promo|savings?|off)\b/i },

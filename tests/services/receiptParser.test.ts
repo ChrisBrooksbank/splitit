@@ -467,6 +467,113 @@ SERVICE NOT INCLUDED
     expect(result.detectedTotal).toBe(8679)
     expect(result.validationWarnings).toHaveLength(0)
   })
+
+  it('parses UK OCR output when item names and prices are split across lines', () => {
+    const text = `
+THE KINGFISHER ARMS
+14 HIGH STREET, BRISTOL BS1 4AB
+VAT NO 123 4567 89
+TABLE 12 SERVER AMY
+
+2 OLD MOUT STRAWBERRY APPLE
+
+13.00
+1 280Z STRAWB
+8.90
+1 ADD WHIPPED CREAM
+0.50
+1 LARGE TATER TOTS
+6.00
+1 CHEESEBURGER
+11.90
+2 MORETTI PINT
+10.50
+1 SODA & LIME
+2.50
+1 FLAT WHITE
+2.85
+DRINK
+37.75
+FOOD
+18.40
+SUBTOTAL
+56.15
+VAT INCLUDED
+9.36
+SERVICE %10.00
+5.62
+TOTAL
+61.77
+VISA **** 1234
+61.77
+THANK YOU
+`
+    const result = parseReceipt(text)
+
+    expect(result.lineItems.map((item) => item.name)).toEqual([
+      'OLD MOUT STRAWBERRY APPLE',
+      '280Z STRAWB',
+      'ADD WHIPPED CREAM',
+      'LARGE TATER TOTS',
+      'CHEESEBURGER',
+      'MORETTI PINT',
+      'SODA & LIME',
+      'FLAT WHITE',
+    ])
+    expect(result.lineItems[0].quantity).toBe(2)
+    expect(result.lineItems[0].price).toBe(650)
+    expect(result.lineItems[5].quantity).toBe(2)
+    expect(result.lineItems[5].price).toBe(525)
+  })
+
+  it('keeps low-confidence items when OCR drops price punctuation', () => {
+    const text = `
+1 AVOCADO TOAST               885
+2 CAPPUCCINO                  7.20
+1 ORANGE JUICE                2695
+CONTACTLESS                  26.40
+`
+    const result = parseReceipt(text)
+
+    expect(result.lineItems.map((item) => item.name)).toEqual([
+      'AVOCADO TOAST',
+      'CAPPUCCINO',
+      'ORANGE JUICE',
+    ])
+    expect(result.lineItems[0].price).toBe(885)
+    expect(result.lineItems[0].confidence).toBe(0.5)
+    expect(result.lineItems[2].price).toBe(2695)
+    expect(result.lineItems[2].confidence).toBe(0.5)
+  })
+
+  it('keeps low-confidence items when OCR garbles a trailing price', () => {
+    const text = `
+GARLIC TIGER PRAWNS          8) S55
+CHICKEN HAM PIE             14.95
+`
+    const result = parseReceipt(text)
+
+    expect(result.lineItems).toHaveLength(2)
+    expect(result.lineItems[0].name).toBe('GARLIC TIGER PRAWNS')
+    expect(result.lineItems[0].price).toBe(855)
+    expect(result.lineItems[0].confidence).toBe(0.5)
+  })
+
+  it('keeps low-confidence items when OCR splits pound-sign prices into groups', () => {
+    const text = `
+Prawn Cocktail               £548 0 25)
+1 Sticky Toffee Pudding     $57 0 25)
+`
+    const result = parseReceipt(text)
+
+    expect(result.lineItems).toHaveLength(2)
+    expect(result.lineItems[0].name).toBe('Prawn Cocktail')
+    expect(result.lineItems[0].price).toBe(825)
+    expect(result.lineItems[0].confidence).toBe(0.5)
+    expect(result.lineItems[1].name).toBe('Sticky Toffee Pudding')
+    expect(result.lineItems[1].price).toBe(725)
+    expect(result.lineItems[1].confidence).toBe(0.5)
+  })
 })
 
 // ---------------------------------------------------------------------------

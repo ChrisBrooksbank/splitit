@@ -43,16 +43,31 @@ export function parseReceipt(ocrText: string): ParsedReceipt {
   let detectedSubtotal: number | null = null
   let detectedTax: number | null = null
   let detectedTotal: number | null = null
+  let pendingItemLine: string | null = null
 
   for (const rawLine of lines) {
     const line = rawLine.trim()
 
-    // Skip blank / noise lines
-    if (shouldSkipLine(line)) continue
+    // OCR sometimes inserts a blank line between a split item name and its price.
+    if (line.length === 0) continue
+
+    // Skip noise lines
+    if (shouldSkipLine(line)) {
+      pendingItemLine = null
+      continue
+    }
+
+    const splitColumnItem = extractSplitColumnItem(pendingItemLine, line)
+    if (splitColumnItem) {
+      lineItems.push(splitColumnItem)
+      pendingItemLine = null
+      continue
+    }
 
     // Check for metadata (subtotal / tax / total / tip / payment)
     const metadata = extractMetadata(line)
     if (metadata) {
+      pendingItemLine = null
       if (metadata.key === 'subtotal' && detectedSubtotal === null) {
         detectedSubtotal = metadata.cents
       } else if (metadata.key === 'tax' && detectedTax === null) {
@@ -75,6 +90,7 @@ export function parseReceipt(ocrText: string): ParsedReceipt {
     // Check for modifier lines (indented with -/+/*)
     const modifierItem = extractModifierItem(rawLine)
     if (modifierItem !== undefined) {
+      pendingItemLine = null
       if (modifierItem !== null) {
         lineItems.push(modifierItem)
       }
@@ -86,6 +102,7 @@ export function parseReceipt(ocrText: string): ParsedReceipt {
     const item = extractLineItem(line)
     if (item) {
       lineItems.push(item)
+      pendingItemLine = null
       continue
     }
 
@@ -94,6 +111,14 @@ export function parseReceipt(ocrText: string): ParsedReceipt {
     if (lineItems.length > 0 && isContinuationLine(rawLine, line)) {
       const prev = lineItems[lineItems.length - 1]
       prev.name = prev.name + ' ' + line
+      pendingItemLine = null
+      continue
+    }
+
+    if (isPotentialSplitColumnItemName(line)) {
+      pendingItemLine = line
+    } else {
+      pendingItemLine = null
     }
   }
 
@@ -242,13 +267,15 @@ function extractModifierItem(rawLine: string): LineItem | null | undefined {
 
 function extractLineItem(line: string): LineItem | null {
   // Must have a price at the end of the line
-  const priceMatch = line.match(PRICE_PATTERN)
+  const priceMatch = extractPriceCandidate(line)
   if (!priceMatch) return null
 
-  const rawPriceStr = priceMatch[1]
+  const rawPriceStr = priceMatch.raw
 
   // Determine if the line had a currency symbol prefix (affects confidence)
-  const hasCurrencySymbol = /[£$€]/.test(line.slice(0, line.lastIndexOf(rawPriceStr)))
+  const hasCurrencySymbol =
+    /[£$€]/.test(priceMatch.matchText) ||
+    /[£$€]/.test(line.slice(0, line.lastIndexOf(priceMatch.matchText)))
 
   // Check for OCR digit fixes
   const hadOcrFix =
@@ -257,9 +284,9 @@ function extractLineItem(line: string): LineItem | null {
     /(?:\d[lIoO]|[lIoO]\d|[lIoO]\.)/.test(rawPriceStr)
 
   // Check if line has a leading negative sign (discount/refund)
-  const isNegative = /^-/.test(priceMatch[0].trim())
+  const isNegative = /^-/.test(priceMatch.matchText.trim())
 
-  let cents = parsePriceCents(rawPriceStr)
+  let cents = priceMatch.cents
   if (cents === null || (cents <= 0 && !isNegative)) return null
 
   // Detect misread currency symbol: £ can be OCR'd as 1/l/I, turning
@@ -277,7 +304,7 @@ function extractLineItem(line: string): LineItem | null {
   const finalCents = isNegative ? -Math.abs(cents) : cents
 
   // Remove the price portion from the end of the line to get the name part
-  const nameRaw = line.slice(0, line.length - priceMatch[0].length).trim()
+  const nameRaw = line.slice(0, line.length - priceMatch.matchText.length).trim()
   if (nameRaw.length === 0) return null
 
   // Extract quantity prefix (e.g. "2x ", "3 X ") or common receipt quantity column
@@ -299,7 +326,7 @@ function extractLineItem(line: string): LineItem | null {
 
   // Confidence: high if $ present, medium if plain number, low if OCR fix applied
   let confidence = hasCurrencySymbol ? HIGH_CONFIDENCE : MEDIUM_CONFIDENCE
-  if (hadOcrFix || hadCurrencyFix) confidence = LOW_CONFIDENCE
+  if (hadOcrFix || hadCurrencyFix || priceMatch.lowConfidence) confidence = LOW_CONFIDENCE
 
   // The price on the receipt line is the line total (e.g. "2 X Soup  16.00"
   // means 16.00 for both soups). Divide by quantity to get the unit price,
@@ -314,4 +341,88 @@ function extractLineItem(line: string): LineItem | null {
     confidence,
     manuallyEdited: false,
   }
+}
+
+interface PriceCandidate {
+  matchText: string
+  raw: string
+  cents: number | null
+  lowConfidence: boolean
+}
+
+function extractPriceCandidate(line: string): PriceCandidate | null {
+  const standard = line.match(PRICE_PATTERN)
+  if (standard) {
+    return {
+      matchText: standard[0],
+      raw: standard[1],
+      cents: parsePriceCents(standard[1]),
+      lowConfidence: false,
+    }
+  }
+
+  const compact = line.match(/-?\s*[£$€]?\s*([lIoO\d]{3,4})\s*$/)
+  if (compact) {
+    const cents = parseCompactPriceCents(compact[1])
+    return {
+      matchText: compact[0],
+      raw: compact[1],
+      cents,
+      lowConfidence: true,
+    }
+  }
+
+  const fuzzy = line.match(/-?\s*[£$€]?\s*([lIoOSs\d][lIoOSs\d\s().]{2,8})\s*$/)
+  if (!fuzzy) return null
+
+  const cents = parseCompactPriceCents(fuzzy[1])
+  if (cents === null) return null
+  return {
+    matchText: fuzzy[0],
+    raw: fuzzy[1],
+    cents,
+    lowConfidence: true,
+  }
+}
+
+function parseCompactPriceCents(raw: string): number | null {
+  const normalized = raw.replace(/[lI]/g, '1').replace(/[Oo]/g, '0').replace(/[Ss]/g, '5')
+
+  const groups = normalized.match(/\d+/g) ?? []
+  const lastGroup = groups.at(-1)
+  const firstGroup = groups[0]
+  if (firstGroup && groups.length >= 3 && lastGroup?.length === 2) {
+    return Number.parseInt(`${firstGroup.at(-1)}${lastGroup}`, 10)
+  }
+
+  const digits = normalized.replace(/\D/g, '')
+
+  if (digits.length < 3 || digits.length > 4) return null
+  if (/\D/.test(raw) && digits.length === 4) {
+    return Number.parseInt(`${digits[0]}${digits.slice(-2)}`, 10)
+  }
+  return Number.parseInt(digits, 10)
+}
+
+function extractSplitColumnItem(pendingLine: string | null, priceLine: string): LineItem | null {
+  if (!pendingLine || !isStandalonePriceLine(priceLine)) return null
+  return extractLineItem(`${pendingLine} ${priceLine}`)
+}
+
+function isStandalonePriceLine(line: string): boolean {
+  if (!PRICE_PATTERN.test(line)) return false
+  const withoutPrice = line.replace(PRICE_PATTERN, '').trim()
+  return withoutPrice.length === 0
+}
+
+function isPotentialSplitColumnItemName(line: string): boolean {
+  if (PRICE_PATTERN.test(line)) return false
+  if (!/[a-zA-Z]/.test(line)) return false
+  if (extractMetadata(line)) return false
+  if (line.length < 3) return false
+  if (/^(?:food|drink|drinks)$/i.test(line)) return false
+  if (/^\d{1,2}[/:]\d{2}/.test(line)) return false
+  if (/^(?:THE\s+)?[A-Z0-9 '&.-]+(?:ARMS|INN|PUB|BAR|CAFE|RESTAURANT)$/i.test(line)) return false
+  if (/\b(?:street|road|lane|bristol|london|server|table|vat\s+no)\b/i.test(line)) return false
+  return true
 }

@@ -7,7 +7,7 @@ Return ONLY valid JSON in this exact shape, with no markdown and no extra text:
 Rules:
 - Currency is GBP. Treat £, GBP, and plain receipt prices as pounds sterling.
 - Include only food and drink items, plus paid item modifiers/add-ons that are separately priced (for example "Extra cheese £1.50").
-- Exclude subtotal, total, balance due, VAT/tax, service charge, gratuity, tip, delivery/booking/card fees, discounts, vouchers, coupons, payment lines, change, table/order numbers, and merchant details.
+- Exclude subtotal, total, balance due, VAT/tax, service charge, gratuity, tip, delivery/booking/card fees, discounts, vouchers, coupons, payment lines (including card/contactless/cash/Visa), change, table/order numbers, and merchant details.
 - price must be the LINE TOTAL in pounds, not the unit price. Example: "2x Beer £11.00" -> {"name":"Beer","price":11.00,"qty":2}.
 - qty must be an integer quantity. Default to 1 when no quantity is shown.
 - Use the exact item names from the receipt, but remove quantity prefixes such as "2x" from the name.

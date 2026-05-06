@@ -110,11 +110,40 @@ describe('parseAiResponse', () => {
         { name: 'DRINK', price: 28.1, qty: 1 },
         { name: 'FOOD', price: 50.8, qty: 1 },
         { name: 'Total', price: 59.74, qty: 1 },
+        { name: 'Contactless', price: 59.74, qty: 1 },
         { name: '10% Loyalty Discount', price: -2.46, qty: 1 },
       ],
     })
     const result = parseAiResponse(input)
     expect(result).toHaveLength(1)
     expect(result[0].name).toBe('Fish & Chips')
+  })
+
+  it('handles the structured AI version of the OCR variety bills', () => {
+    const input = JSON.stringify({
+      items: [
+        { name: '2 CAMDEN HELLS', price: 12.4, qty: 2 },
+        { name: 'Fish & Chips', price: 15.95, qty: 1 },
+        { name: 'Mushy Peas', price: 2.5, qty: 1 },
+        { name: 'DRINK', price: 21.5, qty: 1 },
+        { name: 'FOOD', price: 39.2, qty: 1 },
+        { name: 'Subtotal', price: 60.7, qty: 1 },
+        { name: 'VAT Included', price: 10.12, qty: 1 },
+        { name: 'Service %12.50', price: 7.59, qty: 1 },
+        { name: 'Contactless', price: 68.29, qty: 1 },
+        { name: '1 Sticky Toffee Pudding', price: 7.25, qty: 1 },
+      ],
+    })
+    const result = parseAiResponse(input)
+
+    expect(result.map((item) => item.name)).toEqual([
+      'CAMDEN HELLS',
+      'Fish & Chips',
+      'Mushy Peas',
+      'Sticky Toffee Pudding',
+    ])
+    expect(result[0].quantity).toBe(2)
+    expect(result[0].price).toBe(620)
+    expect(result[3].price).toBe(725)
   })
 })

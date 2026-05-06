@@ -34,7 +34,7 @@ async function getWorker(onProgress?: OcrProgressCallback): Promise<Worker> {
     },
   }).then(async (worker) => {
     await worker.setParameters({
-      tessedit_pageseg_mode: PSM.SINGLE_COLUMN,
+      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
       preserve_interword_spaces: '1',
     })
     workerInstance = worker

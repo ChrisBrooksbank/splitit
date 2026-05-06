@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { preprocessImage } from '../services/ocr/imagePreprocessor'
+import { parseReceipt } from '../services/ocr/receiptParser'
 import { recognize } from '../services/ocr/tesseractService'
 import {
   createThumbnailDataUrl,
@@ -61,7 +62,7 @@ export default function ProcessingPage() {
 
           // OCR
           if (!photoLabel) setLabel('Loading OCR…')
-          const text = await recognize(processed, (tesseractProgress, status) => {
+          let text = await recognize(processed, (tesseractProgress, status) => {
             const photoProgress = 0.1 + tesseractProgress * 0.85
             setProgress((i + photoProgress) / totalPhotos)
             if (!photoLabel) {
@@ -75,6 +76,11 @@ export default function ProcessingPage() {
               }
             }
           })
+
+          if (parseReceipt(text).lineItems.length === 0) {
+            if (!photoLabel) setLabel('Retrying scan…')
+            text = await recognize(file)
+          }
 
           texts.push(text)
         } catch {

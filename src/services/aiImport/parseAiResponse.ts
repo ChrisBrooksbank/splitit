@@ -65,14 +65,11 @@ interface NormalizedAiItem {
 }
 
 const NON_ITEM_NAME_PATTERN =
-  /\b(?:sub\s*total|subtotal|total|balance|amount\s*due|vat|tax|service|svc|gratuity|tip|discount|voucher|coupon|promo|loyalty|card|cash|visa|mastercard|amex|change|payment|paid)\b/i
+  /\b(?:sub\s*total|subtotal|total|balance|amount\s*due|vat|tax|service|svc|gratuity|tip|discount|voucher|coupon|promo|loyalty|card|cash|visa|mastercard|amex|contactless|change|payment|paid)\b/i
 const CATEGORY_TOTAL_NAME_PATTERN = /^(?:FOOD|DRINK|DRINKS)$/
 
 function normalizeAiItem(item: AiItem): NormalizedAiItem | null {
-  const name = item.name
-    .trim()
-    .replace(/^\d+\s*x\s+/i, '')
-    .trim()
+  const name = normalizeName(item.name, item.qty)
   const price = normalizePrice(item.price)
 
   if (
@@ -85,6 +82,17 @@ function normalizeAiItem(item: AiItem): NormalizedAiItem | null {
   if (price === null || price <= 0) return null
 
   return { name, price, qty: item.qty }
+}
+
+function normalizeName(name: string, qty: number | undefined): string {
+  const trimmed = name
+    .trim()
+    .replace(/^\d+\s*x\s+/i, '')
+    .trim()
+  if (typeof qty !== 'number' || qty < 1) return trimmed
+
+  const roundedQty = Math.round(qty)
+  return trimmed.replace(new RegExp(`^${roundedQty}\\s+(?=\\S)`), '').trim()
 }
 
 function normalizePrice(price: number | string): number | null {
