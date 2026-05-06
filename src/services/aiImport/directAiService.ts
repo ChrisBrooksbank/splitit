@@ -1,5 +1,9 @@
 import type { AiProvider } from '../../store/apiKeyStore'
 
+const MAX_RAW_IMAGE_BYTES = 1_500_000
+const MAX_AI_IMAGE_SIZE = 1400
+const AI_JPEG_QUALITY = 0.75
+
 const PROMPT = `Read these restaurant bill/receipt photos and extract every line item. If there are multiple photos, they are parts of the same bill — combine them into one list and remove any duplicates from overlapping sections. Return ONLY a JSON object in this exact format, no other text:
 
 {"items":[{"name":"Item Name","price":12.99,"qty":1}]}
@@ -11,7 +15,7 @@ Rules:
 - Use the exact item names from the receipt
 - price is a number with 2 decimal places, in pounds sterling (not a string, no £ symbol)`
 
-async function fileToBase64(file: File): Promise<string> {
+async function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result as string)
@@ -20,145 +24,79 @@ async function fileToBase64(file: File): Promise<string> {
   })
 }
 
+async function resizeFileForAi(file: File): Promise<string> {
+  const objectUrl = URL.createObjectURL(file)
+  const img = new Image()
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('Failed to load image for AI processing'))
+      img.src = objectUrl
+    })
+
+    const scale = Math.min(MAX_AI_IMAGE_SIZE / img.width, MAX_AI_IMAGE_SIZE / img.height, 1)
+    const width = Math.max(1, Math.round(img.width * scale))
+    const height = Math.max(1, Math.round(img.height * scale))
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Could not prepare image for AI processing')
+
+    ctx.drawImage(img, 0, 0, width, height)
+    return canvas.toDataURL('image/jpeg', AI_JPEG_QUALITY)
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  if (file.size <= MAX_RAW_IMAGE_BYTES) {
+    return readFileAsDataUrl(file)
+  }
+
+  try {
+    return await resizeFileForAi(file)
+  } catch {
+    return readFileAsDataUrl(file)
+  }
+}
+
 export async function processReceiptWithAi(
   images: File[],
   provider: AiProvider,
   apiKey: string
 ): Promise<string> {
   const base64Images = await Promise.all(images.map(fileToBase64))
+  const inferredProvider = apiKey.trim().startsWith('sk-ant-') ? 'anthropic' : provider
 
-  if (provider === 'openai') {
-    return callOpenAi(base64Images, apiKey)
-  }
-  if (provider === 'gemini') {
-    return callGemini(base64Images, apiKey)
-  }
-  return callAnthropic(base64Images, apiKey)
-}
-
-async function callOpenAi(base64Images: string[], apiKey: string): Promise<string> {
-  const imageContent = base64Images.map((dataUrl) => ({
-    type: 'image_url' as const,
-    image_url: { url: dataUrl },
-  }))
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('/api/ai-receipt', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [{ type: 'text', text: PROMPT }, ...imageContent],
-        },
-      ],
-      max_tokens: 2000,
+      provider: inferredProvider,
+      apiKey,
+      images: base64Images,
+      prompt: PROMPT,
     }),
   })
 
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}))
-    const msg =
-      (body as { error?: { message?: string } }).error?.message ??
-      `OpenAI API error (${response.status})`
-    throw new Error(msg)
-  }
-
-  const data = (await response.json()) as {
-    choices: { message: { content: string } }[]
-  }
-  return data.choices[0].message.content
-}
-
-async function callAnthropic(base64Images: string[], apiKey: string): Promise<string> {
-  const imageContent = base64Images.map((dataUrl) => {
-    const [meta, data] = dataUrl.split(',')
-    const mediaType = meta.match(/data:(.*?);/)?.[1] ?? 'image/jpeg'
-    return {
-      type: 'image' as const,
-      source: {
-        type: 'base64' as const,
-        media_type: mediaType,
-        data,
-      },
-    }
-  })
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: [...imageContent, { type: 'text', text: PROMPT }],
-        },
-      ],
-    }),
-  })
+  const contentType = response.headers?.get('content-type') ?? ''
+  const body = contentType.includes('application/json')
+    ? ((await response.json().catch(() => ({}))) as { text?: string; error?: string })
+    : { error: await response.text().catch(() => '') }
 
   if (!response.ok) {
-    const body = await response.json().catch(() => ({}))
-    const msg =
-      (body as { error?: { message?: string } }).error?.message ??
-      `Anthropic API error (${response.status})`
-    throw new Error(msg)
+    throw new Error(body.error || `AI service error (${response.status})`)
   }
 
-  const data = (await response.json()) as {
-    content: { text: string }[]
-  }
-  return data.content[0].text
-}
-
-async function callGemini(base64Images: string[], apiKey: string): Promise<string> {
-  const imageParts = base64Images.map((dataUrl) => {
-    const [meta, data] = dataUrl.split(',')
-    const mimeType = meta.match(/data:(.*?);/)?.[1] ?? 'image/jpeg'
-    return {
-      inline_data: {
-        mime_type: mimeType,
-        data,
-      },
-    }
-  })
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: PROMPT }, ...imageParts],
-          },
-        ],
-      }),
-    }
-  )
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}))
-    const msg =
-      (body as { error?: { message?: string } }).error?.message ??
-      `Gemini API error (${response.status})`
-    throw new Error(msg)
+  if (!body.text) {
+    throw new Error('AI service returned an invalid response.')
   }
 
-  const data = (await response.json()) as {
-    candidates: { content: { parts: { text: string }[] } }[]
-  }
-  return data.candidates[0].content.parts[0].text
+  return body.text
 }

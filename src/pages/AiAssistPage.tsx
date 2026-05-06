@@ -133,7 +133,8 @@ export default function AiAssistPage() {
   function handleSaveKey() {
     const trimmed = keyDraft.trim()
     if (!trimmed) return
-    setProvider(providerDraft)
+    const inferredProvider = trimmed.startsWith('sk-ant-') ? 'anthropic' : providerDraft
+    setProvider(inferredProvider)
     setApiKey(trimmed)
     setKeyDraft('')
     setShowKeySetup(false)
@@ -241,11 +242,7 @@ export default function AiAssistPage() {
             <div className="flex flex-col gap-2 items-center">
               <p className="text-xs text-gray-400 dark:text-gray-500">
                 Using{' '}
-                {provider === 'openai'
-                  ? 'OpenAI'
-                  : provider === 'anthropic'
-                    ? 'Anthropic'
-                    : 'Gemini'}{' '}
+                {provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Claude' : 'Gemini'}{' '}
                 ·{' '}
                 <button
                   onClick={handleRemoveKey}
@@ -330,8 +327,8 @@ export default function AiAssistPage() {
           <div className="flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Set up API key</h3>
             <p className="text-xs text-gray-400 dark:text-gray-500">
-              Your key is stored locally on this device and sent directly to the provider. It never
-              touches our servers.
+              Your key is stored locally on this device and only sent while processing a receipt. It
+              is not saved on our servers.
             </p>
 
             {/* Provider selector */}
@@ -346,7 +343,7 @@ export default function AiAssistPage() {
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                   }`}
                 >
-                  {p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Anthropic' : 'Gemini'}
+                  {p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Claude' : 'Gemini'}
                 </button>
               ))}
             </div>
