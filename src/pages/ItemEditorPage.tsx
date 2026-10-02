@@ -4,6 +4,9 @@ import { nanoid } from 'nanoid'
 import { ArrowRight, QrCode, Camera } from 'lucide-react'
 import { useBillStore } from '../store/billStore'
 import { useHistoryStore } from '../store/historyStore'
+import { usePeopleStore } from '../store/peopleStore'
+import { useAssignmentStore } from '../store/assignmentStore'
+import { useTipStore } from '../store/tipStore'
 import CopySummaryButton from '../components/layout/CopySummaryButton'
 import { parseReceipt, mergeReceipts, type ParsedReceipt } from '../services/ocr/receiptParser'
 import { peekReceiptPhotos, peekReceiptViewPhotos } from '../utils/photoThumbnail'
@@ -91,8 +94,13 @@ export default function ItemEditorPage() {
     if (didInit.current) return
     didInit.current = true
 
-    if (lineItems.length > 0) return
+    // A fresh scan replaces any stale bill (OCR data is consumed once, so remounts never re-run this)
     if (ocrInit.parsedItems.length > 0) {
+      if (lineItems.length > 0) {
+        usePeopleStore.getState().reset()
+        useAssignmentStore.getState().reset()
+        useTipStore.getState().reset()
+      }
       setLineItems(ocrInit.parsedItems)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

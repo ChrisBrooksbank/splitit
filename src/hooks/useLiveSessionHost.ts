@@ -70,7 +70,7 @@ export function useLiveSessionHost() {
             setRoomCode(newCode)
             setError(null)
             setStatusMessage(null)
-            useLiveSessionStore.getState().startSession('host', newCode)
+            useLiveSessionStore.getState().setRoomCode(newCode)
             useLiveSessionStore.getState().setConnectionStatus('connected')
           } catch {
             if (!cancelled) {

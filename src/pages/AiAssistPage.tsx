@@ -15,6 +15,9 @@ import { parseAiResponse } from '../services/aiImport/parseAiResponse'
 import { processReceiptWithAi } from '../services/aiImport/directAiService'
 import { AI_RECEIPT_PROMPT } from '../services/aiImport/receiptPrompt'
 import { useBillStore } from '../store/billStore'
+import { usePeopleStore } from '../store/peopleStore'
+import { useAssignmentStore } from '../store/assignmentStore'
+import { useTipStore } from '../store/tipStore'
 import { useApiKeyStore, type AiProvider } from '../store/apiKeyStore'
 import ImageCapture from '../components/camera/ImageCapture'
 import { createThumbnailDataUrl, storeReceiptPhotos } from '../utils/photoThumbnail'
@@ -27,6 +30,14 @@ interface CapturedPhoto {
 export default function AiAssistPage() {
   const navigate = useNavigate()
   const setLineItems = useBillStore((s) => s.setLineItems)
+
+  // A newly imported bill replaces any previous one, including its people, claims and tips
+  function replaceBill(items: Parameters<typeof setLineItems>[0]) {
+    usePeopleStore.getState().reset()
+    useAssignmentStore.getState().reset()
+    useTipStore.getState().reset()
+    setLineItems(items)
+  }
   const { apiKey, provider, setProvider, setApiKey, clear } = useApiKeyStore()
 
   const hasKey = Boolean(apiKey)
@@ -69,7 +80,7 @@ export default function AiAssistPage() {
     setError('')
     try {
       const items = parseAiResponse(response)
-      setLineItems(items)
+      replaceBill(items)
       navigate('/editor')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse response.')
@@ -109,7 +120,7 @@ export default function AiAssistPage() {
       // Save photo thumbnails for history
       const thumbs = await Promise.all(photos.map((p) => createThumbnailDataUrl(p.file)))
       storeReceiptPhotos(thumbs)
-      setLineItems(items)
+      replaceBill(items)
       navigate('/editor')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process receipt.')

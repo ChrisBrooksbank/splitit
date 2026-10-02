@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { toUnitPricing } from '../../utils/lineTotal'
 
 interface ItemEditorModalProps {
   /** Modal title — e.g. "Add Item" or "Edit Item" */
@@ -64,9 +65,9 @@ export default function ItemEditorModal({
     const parsedPrice = Math.round(parseFloat(price) * 100)
     if (isNaN(parsedPrice) || parsedPrice < 0) return
     const parsedQty = Math.max(1, parseInt(qty, 10) || 1)
-    // User enters the total price for the quantity; convert to unit price
-    const unitPrice = parsedQty > 1 ? Math.round(parsedPrice / parsedQty) : parsedPrice
-    onSave(trimmedName, unitPrice, parsedQty)
+    // User enters the total price for the quantity; convert to unit price without losing cents
+    const priced = toUnitPricing(trimmedName, parsedPrice, parsedQty)
+    onSave(priced.name, priced.price, priced.quantity)
   }
 
   return (

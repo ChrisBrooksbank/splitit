@@ -14,6 +14,7 @@ import {
   PRICE_PATTERN,
   QUANTITY_COLUMN_PATTERN,
   QUANTITY_PATTERN,
+  SIZE_UNIT_PATTERN,
   SKIP_PATTERNS,
   METADATA_PATTERNS,
   MODIFIER_PATTERN,
@@ -326,7 +327,15 @@ function extractLineItem(line: string): LineItem | null {
 
   // Extract quantity prefix (e.g. "2x ", "3 X ") or common receipt quantity column
   // (e.g. "2 Lager  11.00"). The receipt price is treated as the line total.
-  const qtyMatch = nameRaw.match(QUANTITY_PATTERN) ?? nameRaw.match(QUANTITY_COLUMN_PATTERN)
+  const prefixMatch = nameRaw.match(QUANTITY_PATTERN)
+  const columnMatch = prefixMatch ? null : nameRaw.match(QUANTITY_COLUMN_PATTERN)
+  // A bare leading number is only a quantity if it divides the line total ("7 UP 2.50" isn't 7 drinks)
+  const columnIsQty =
+    columnMatch !== null &&
+    !SIZE_UNIT_PATTERN.test(nameRaw.slice(columnMatch[0].length)) &&
+    Math.abs(finalCents) % parseInt(columnMatch[1], 10) === 0 &&
+    parseInt(columnMatch[1], 10) > 0
+  const qtyMatch = prefixMatch ?? (columnIsQty ? columnMatch : null)
   let quantity = 1
   let name = nameRaw
 
@@ -378,7 +387,7 @@ function extractPriceCandidate(line: string): PriceCandidate | null {
     }
   }
 
-  const compact = line.match(/-?\s*[£$€]?\s*([lIoO\d]{3,4})\s*$/)
+  const compact = line.match(/(?:-\s*[£$€]\s*|-(?=[lIoO\d])|[£$€]\s*)?([lIoO\d]{3,4})\s*$/)
   if (compact) {
     const cents = parseCompactPriceCents(compact[1])
     return {
@@ -389,7 +398,9 @@ function extractPriceCandidate(line: string): PriceCandidate | null {
     }
   }
 
-  const fuzzy = line.match(/-?\s*[£$€]?\s*([lIoOSs\d][lIoOSs\d\s().]{2,8})\s*$/)
+  const fuzzy = line.match(
+    /(?:-\s*[£$€]\s*|-(?=[lIoOSs\d])|[£$€]\s*)?([lIoOSs\d][lIoOSs\d\s().]{2,8})\s*$/
+  )
   if (!fuzzy) return null
 
   const cents = parseCompactPriceCents(fuzzy[1])

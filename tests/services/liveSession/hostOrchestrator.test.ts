@@ -27,6 +27,10 @@ function createMockRelayService(): RelayService & {
   } as unknown as RelayService & { handlers: Record<string, (...args: unknown[]) => void> }
 }
 
+function seedPeople(...ids: string[]) {
+  usePeopleStore.getState().setPeople(ids.map((id) => ({ id, name: id, color: '#0057B8' })))
+}
+
 describe('hostOrchestrator', () => {
   let mockPeer: ReturnType<typeof createMockRelayService>
 
@@ -88,6 +92,7 @@ describe('hostOrchestrator', () => {
     })
 
     it('handles CLAIM_ITEM message', () => {
+      seedPeople('p1')
       useBillStore.getState().addLineItem({
         name: 'Pizza',
         price: 1200,
@@ -110,6 +115,7 @@ describe('hostOrchestrator', () => {
     })
 
     it('handles UNCLAIM_ITEM message', () => {
+      seedPeople('p1')
       useBillStore.getState().addLineItem({
         name: 'Pizza',
         price: 1200,
@@ -133,6 +139,7 @@ describe('hostOrchestrator', () => {
     })
 
     it('handles SET_TIP percentage message', () => {
+      seedPeople('p1')
       useTipStore.getState().initializeTips(['p1'])
 
       const orchestrator = createHostOrchestrator(mockPeer)
@@ -151,6 +158,7 @@ describe('hostOrchestrator', () => {
     })
 
     it('handles SET_TIP fixed message', () => {
+      seedPeople('p1')
       useTipStore.getState().initializeTips(['p1'])
 
       const orchestrator = createHostOrchestrator(mockPeer)
@@ -169,6 +177,7 @@ describe('hostOrchestrator', () => {
     })
 
     it('handles SET_ASSIGNEES message with portions', () => {
+      seedPeople('p1', 'p2')
       useBillStore.getState().addLineItem({
         name: 'Pizza',
         price: 1200,
@@ -251,6 +260,74 @@ describe('hostOrchestrator', () => {
       mockPeer.handlers['guest-connected']('guest-1')
       mockPeer.handlers['guest-disconnected']('guest-1')
       expect(useLiveSessionStore.getState().guests[0].connected).toBe(false)
+    })
+  })
+
+  describe('regressions', () => {
+    it('keeps broadcasting host edits after destroy() + start() (host reconnect)', () => {
+      const orchestrator = createHostOrchestrator(mockPeer)
+      orchestrator.start()
+      orchestrator.destroy()
+      orchestrator.start()
+      ;(mockPeer.broadcastToAll as ReturnType<typeof vi.fn>).mockClear()
+
+      useAssignmentStore.getState().assignPerson('item-x', 'p1')
+      vi.advanceTimersByTime(60)
+
+      expect(mockPeer.broadcastToAll).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not subscribe twice when start() is called repeatedly', () => {
+      const orchestrator = createHostOrchestrator(mockPeer)
+      orchestrator.start()
+      orchestrator.start()
+      ;(mockPeer.broadcastToAll as ReturnType<typeof vi.fn>).mockClear()
+
+      useAssignmentStore.getState().assignPerson('item-x', 'p1')
+      vi.advanceTimersByTime(60)
+
+      expect(mockPeer.broadcastToAll).toHaveBeenCalledTimes(1)
+    })
+
+    it('frees a name when its guest disconnects so they can reclaim it', () => {
+      useLiveSessionStore.setState({
+        guests: [{ peerId: 'g1', personId: 'p1', displayName: 'Alice', connected: true }],
+      })
+      expect(buildSyncPayload().claimedPersonIds).toEqual(['p1'])
+
+      useLiveSessionStore.getState().disconnectGuest('g1')
+      expect(buildSyncPayload().claimedPersonIds).toEqual([])
+    })
+
+    it('ignores guest messages that reference unknown items or people', () => {
+      seedPeople('p1')
+      useBillStore.getState().addLineItem({
+        name: 'Pizza',
+        price: 1200,
+        quantity: 1,
+        confidence: 1,
+        manuallyEdited: false,
+      })
+      const itemId = useBillStore.getState().lineItems[0].id
+      const orchestrator = createHostOrchestrator(mockPeer)
+      orchestrator.start()
+      const send = mockPeer.handlers['guest-message']
+
+      send('g', { type: 'CLAIM_ITEM', itemId: 'nope', personId: 'p1' })
+      send('g', { type: 'CLAIM_ITEM', itemId, personId: 'ghost' })
+      send('g', { type: 'SET_TIP', personId: 'ghost', mode: 'percentage', value: 10 })
+      send('g', {
+        type: 'SET_ASSIGNEES',
+        itemId,
+        personIds: ['p1', 'ghost'],
+        portions: { p1: 2, ghost: 5 },
+      })
+
+      const { assignments, portions } = useAssignmentStore.getState()
+      expect(assignments['nope']).toBeUndefined()
+      expect(assignments[itemId]).toEqual(['p1'])
+      expect(portions[itemId]).toEqual({ p1: 2 })
+      expect(useTipStore.getState().personTips['ghost']).toBeUndefined()
     })
   })
 })

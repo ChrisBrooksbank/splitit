@@ -102,4 +102,17 @@ describe('liveSessionStore', () => {
     expect(state.guests).toEqual([])
     expect(state.phase).toBe('lobby')
   })
+
+  it('setRoomCode swaps the code without resetting phase (host reconnect)', () => {
+    const store = useLiveSessionStore.getState()
+    store.startSession('host', 'OLD')
+    store.setPhase('tips')
+
+    useLiveSessionStore.getState().setRoomCode('NEW')
+
+    const state = useLiveSessionStore.getState()
+    expect(state.roomCode).toBe('NEW')
+    expect(state.phase).toBe('tips')
+    expect(state.isLive).toBe(true)
+  })
 })

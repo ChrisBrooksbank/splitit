@@ -210,4 +210,15 @@ describe('useLiveSessionGuest', () => {
     unmount()
     expect(mockDestroy).toHaveBeenCalled()
   })
+
+  it('reports disconnected (not connected) when remounting after a failed reconnect', () => {
+    useLiveSessionStore.getState().startSession('guest', 'room-123')
+    useLiveSessionStore.getState().setPeerService({} as never, vi.fn())
+    useLiveSessionStore.getState().setConnectionStatus('disconnected')
+
+    const { result } = renderHook(() => useLiveSessionGuest('room-123'))
+
+    expect(result.current.connectionStatus).toBe('disconnected')
+    expect(result.current.isConnected).toBe(false)
+  })
 })

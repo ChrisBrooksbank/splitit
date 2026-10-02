@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Camera, AlertTriangle } from 'lucide-react'
 import { useQRScanner } from '../hooks/useQRScanner'
@@ -49,8 +49,14 @@ export default function ImportQRPage() {
   } = useQRScanner(handleDetected)
 
   // Start scanning automatically when entering scanning phase
+  // Once per visit to the scanning phase: stopScanning() flips isScanning off while the decoded
+  // result is still being processed, which would otherwise restart the camera.
+  const scanRequestedRef = useRef(false)
   useEffect(() => {
-    if (state.phase === 'scanning' && !isScanning) {
+    if (state.phase !== 'scanning') {
+      scanRequestedRef.current = false
+    } else if (!isScanning && !scanRequestedRef.current) {
+      scanRequestedRef.current = true
       startScanning()
     }
   }, [state.phase, isScanning, startScanning])
