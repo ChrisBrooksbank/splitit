@@ -30,6 +30,10 @@ export interface ParsedReceipt {
   validationWarnings: string[]
 }
 
+/** A line that starts with "total" and then says what it includes: "Total (inc VAT) 45.00" */
+const TOTAL_INCLUDING_PATTERN =
+  /^\s*(?:grand\s*)?total\b.*(?:\bincl?\b|\bincluding\b|\bincludes\b|\binclusive\b|\bwith\b|\()/i
+
 /** Confidence thresholds */
 const HIGH_CONFIDENCE = 1.0 // explicit currency prefix + standard format
 const MEDIUM_CONFIDENCE = 0.75 // no currency prefix but clean number
@@ -222,7 +226,10 @@ function shouldSkipLine(line: string): boolean {
 function extractMetadata(
   line: string
 ): { key: (typeof METADATA_PATTERNS)[number]['key']; cents: number | null } | null {
+  // "Total (inc VAT) 45.00" / "Total incl. service 55.00" are grand totals, not tax / tip lines
+  const isTotalIncluding = TOTAL_INCLUDING_PATTERN.test(line)
   for (const { key, pattern } of METADATA_PATTERNS) {
+    if (isTotalIncluding && key !== 'total') continue
     if (pattern.test(line)) {
       // Extract price from the line (may not always have one, e.g. payment method)
       const priceMatch = line.match(PRICE_PATTERN)
@@ -388,7 +395,8 @@ function extractPriceCandidate(line: string): PriceCandidate | null {
   }
 
   const compact = line.match(/(?:-\s*[£$€]\s*|-(?=[lIoO\d])|[£$€]\s*)?([lIoO\d]{3,4})\s*$/)
-  if (compact) {
+  // A bare run of l/I/o/O is a word ('Igloo'), not a price: require a real digit
+  if (compact && /\d/.test(compact[1])) {
     const cents = parseCompactPriceCents(compact[1])
     return {
       matchText: compact[0],
@@ -401,7 +409,7 @@ function extractPriceCandidate(line: string): PriceCandidate | null {
   const fuzzy = line.match(
     /(?:-\s*[£$€]\s*|-(?=[lIoOSs\d])|[£$€]\s*)?([lIoOSs\d][lIoOSs\d\s().]{2,8})\s*$/
   )
-  if (!fuzzy) return null
+  if (!fuzzy || !/\d/.test(fuzzy[1])) return null
 
   const cents = parseCompactPriceCents(fuzzy[1])
   if (cents === null) return null

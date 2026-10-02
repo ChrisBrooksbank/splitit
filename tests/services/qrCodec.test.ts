@@ -141,10 +141,15 @@ describe('QR Codec', () => {
       ['tips not tuples', { t: { 0: 'oops' } }, 'Invalid tips'],
       ['tips with bad mode', { t: { 0: ['z', 5] } }, 'Invalid tips'],
       ['negative tip', { t: { 0: ['p', -5] } }, 'Invalid tips'],
+      ['fractional fixed tip', { t: { 0: ['f', 12.5] } }, 'Invalid tips'],
       ['portions with strings', { o: { 0: { 0: 'x' } } }, 'Invalid portions'],
       ['assignments not arrays', { a: { 0: 'x' } }, 'Invalid assignments'],
     ])('rejects %s', async (_label, extra, message) => {
       await expect(decodeFromQR(encode(extra))).rejects.toThrow(message)
+    })
+
+    it('rejects a non-object payload', async () => {
+      await expect(decodeFromQR('splitit:raw:null')).rejects.toThrow('Invalid QR payload')
     })
 
     it('rejects non-integer prices and zero quantity', async () => {

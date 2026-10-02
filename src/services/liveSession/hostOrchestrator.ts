@@ -7,6 +7,9 @@ import type { RelayService } from './RelayService'
 import type { GuestMessage, HostMessage, SessionPhase, SyncPayload } from './types'
 import { debounce } from '../../utils/debounce'
 
+/** Cap on people a session can reach (guests can add people) */
+const MAX_PEOPLE = 30
+
 export function buildSyncPayload(): SyncPayload {
   const { lineItems } = useBillStore.getState()
   const { people } = usePeopleStore.getState()
@@ -48,6 +51,14 @@ export function createHostOrchestrator(peerService: RelayService) {
 
     switch (message.type) {
       case 'IDENTIFY': {
+        const takenByOther = sessionStore.guests.some(
+          (g) => g.connected && g.peerId !== peerId && g.personId === message.personId
+        )
+        if (!knownPerson(message.personId) || takenByOther) {
+          // Refuse, but resync so the guest sees the current claimed names
+          peerService.sendToGuest(peerId, { type: 'SYNC_STATE', payload: buildSyncPayload() })
+          break
+        }
         sessionStore.identifyGuest(peerId, message.personId, message.displayName)
         // Send immediate sync to the newly identified guest
         const payload = buildSyncPayload()
@@ -100,7 +111,9 @@ export function createHostOrchestrator(peerService: RelayService) {
 
       case 'ADD_PERSON': {
         const name = message.name.trim()
-        if (name) {
+        const { people } = usePeopleStore.getState()
+        const duplicate = people.some((p) => p.name.toLowerCase() === name.toLowerCase())
+        if (name && !duplicate && people.length < MAX_PEOPLE) {
           usePeopleStore.getState().addPerson(name)
           broadcastState()
         }

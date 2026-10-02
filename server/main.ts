@@ -82,6 +82,11 @@ function handleSocket(ws: WebSocket): void {
       send(ws, { type: 'ERROR', message: 'Invalid JSON' })
       return
     }
+    // JSON.parse also accepts null / numbers / strings; only objects are valid messages
+    if (typeof msg !== 'object' || msg === null || Array.isArray(msg)) {
+      send(ws, { type: 'ERROR', message: 'Invalid message' })
+      return
+    }
 
     switch (msg.type) {
       case 'CREATE_ROOM': {
@@ -114,8 +119,8 @@ function handleSocket(ws: WebSocket): void {
           ws.close()
           return
         }
-        const code = msg.roomCode as string
-        const room = rooms.get(code)
+        const code = msg.roomCode
+        const room = typeof code === 'string' ? rooms.get(code) : undefined
         if (!room) {
           recordJoinFailure(ws)
           send(ws, { type: 'ERROR', message: 'Room not found' })
@@ -123,7 +128,7 @@ function handleSocket(ws: WebSocket): void {
         }
 
         myPeerId = generatePeerId()
-        myRoomCode = code
+        myRoomCode = code as string
         isHost = false
 
         room.guests.set(myPeerId, ws)

@@ -67,6 +67,7 @@ describe('hostOrchestrator', () => {
 
   describe('handleGuestMessage', () => {
     it('handles IDENTIFY message', () => {
+      seedPeople('p1')
       const orchestrator = createHostOrchestrator(mockPeer)
       orchestrator.start()
 
@@ -89,6 +90,48 @@ describe('hostOrchestrator', () => {
         'guest-1',
         expect.objectContaining({ type: 'SYNC_STATE' })
       )
+    })
+
+    it('ignores IDENTIFY for an unknown person or one held by another connected guest', () => {
+      seedPeople('p1')
+      const orchestrator = createHostOrchestrator(mockPeer)
+      orchestrator.start()
+      const { addGuest } = useLiveSessionStore.getState()
+      addGuest({ peerId: 'g1', personId: null, displayName: null, connected: true })
+      addGuest({ peerId: 'g2', personId: null, displayName: null, connected: true })
+
+      mockPeer.handlers['guest-message']('g1', {
+        type: 'IDENTIFY',
+        personId: 'p1',
+        displayName: 'p1',
+      })
+      mockPeer.handlers['guest-message']('g2', {
+        type: 'IDENTIFY',
+        personId: 'p1',
+        displayName: 'p1',
+      })
+      mockPeer.handlers['guest-message']('g2', {
+        type: 'IDENTIFY',
+        personId: 'ghost',
+        displayName: 'Ghost',
+      })
+
+      const guests = useLiveSessionStore.getState().guests
+      expect(guests.find((g) => g.peerId === 'g1')?.personId).toBe('p1')
+      expect(guests.find((g) => g.peerId === 'g2')?.personId).toBeNull()
+    })
+
+    it('ignores duplicate and over-limit ADD_PERSON', () => {
+      seedPeople('Alice')
+      const orchestrator = createHostOrchestrator(mockPeer)
+      orchestrator.start()
+      const send = (name: string) =>
+        mockPeer.handlers['guest-message']('g1', { type: 'ADD_PERSON', name })
+
+      send(' alice ')
+      expect(usePeopleStore.getState().people).toHaveLength(1)
+      for (let i = 0; i < 40; i++) send(`Guest ${i}`)
+      expect(usePeopleStore.getState().people).toHaveLength(30)
     })
 
     it('handles CLAIM_ITEM message', () => {

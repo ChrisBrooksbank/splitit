@@ -6,6 +6,8 @@ import { parsePriceCents } from '../../src/utils/receiptPatterns'
 // parsePriceCents unit tests
 // ---------------------------------------------------------------------------
 
+const NL = String.fromCharCode(10)
+
 describe('parsePriceCents', () => {
   it('parses standard US price', () => {
     expect(parsePriceCents('12.99')).toBe(1299)
@@ -839,6 +841,30 @@ describe('regressions: mergeReceipts keeps repeats within a photo', () => {
 
     it('still reads a dividing quantity column', () => {
       expect(parse('2 Lager 11.00')).toEqual([['Lager', 550, 2]])
+    })
+  })
+
+  describe('totals that mention what they include', () => {
+    it('treats "Total (inc VAT)" as the grand total, not tax', () => {
+      const r = parseReceipt(['Burger 10.00', 'Subtotal 10.00', 'Total (inc VAT) 12.00'].join(NL))
+      expect(r.detectedTotal).toBe(1200)
+      expect(r.detectedTax).toBeNull()
+    })
+
+    it('treats "Total incl. service" as the grand total, not a tip', () => {
+      const r = parseReceipt(['Burger 10.00', 'Total incl. service 11.00'].join(NL))
+      expect(r.detectedTotal).toBe(1100)
+    })
+
+    it('still reads "Total VAT" as tax', () => {
+      const r = parseReceipt(['Burger 10.00', 'Total VAT 2.00'].join(NL))
+      expect(r.detectedTax).toBe(200)
+    })
+  })
+
+  describe('letter-only endings are not prices', () => {
+    it('does not read a name ending in "sso" or "loo" as a price', () => {
+      expect(parseReceipt(['Lasso', 'Igloo'].join(NL)).lineItems).toEqual([])
     })
   })
 })
