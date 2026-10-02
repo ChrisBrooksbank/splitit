@@ -4,6 +4,19 @@
 
 A fully offline Progressive Web App that makes splitting the bill painless. Photograph a receipt, let OCR extract the line items, pass the phone around the table so everyone claims what they ordered, and get an instant per-person breakdown with proportional tax and tip.
 
+<p align="center">
+  <img src="docs/demo.gif" alt="SplitIt demo: scan a receipt, review the OCR'd items, add people, claim items, choose tips and see the final split" width="720">
+</p>
+
+## How it works
+
+1. **Scan** — Photograph the bill. OCR runs entirely in your browser; nothing is uploaded.
+2. **Review** — Fix any misread lines and check the total against the receipt.
+3. **Add people** — Everyone at the table, with a colour each.
+4. **Claim** — Pass the phone around (or use live sessions on separate phones) and tap what you ordered. Tap the split icon to share a dish.
+5. **Tip** — Each person picks their own tip percentage.
+6. **Settle** — A clear per-person breakdown, ready to copy and send.
+
 ## Features
 
 - **Photo-to-items** — Snap a picture of the bill; Tesseract.js extracts line items locally (no upload required)
