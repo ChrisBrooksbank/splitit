@@ -171,4 +171,38 @@ describe('SharedItemSplitter', () => {
       expect.objectContaining({ alice: 2, bob: 1 })
     )
   })
+
+  it('shows the same penny-exact shares the calculator allocates', () => {
+    const tenPounds: LineItem = { ...item, price: 1000 }
+    render(
+      <SharedItemSplitter
+        item={tenPounds}
+        people={[alice, bob, carol]}
+        currentAssignees={['alice', 'bob', 'carol']}
+        currentPortions={{}}
+        onConfirm={vi.fn()}
+        onClose={vi.fn()}
+      />
+    )
+    // £10.00 / 3 = 3.34 + 3.33 + 3.33, never three × 3.33
+    expect(screen.getByText('£3.34')).toBeInTheDocument()
+    expect(screen.getAllByText('£3.33')).toHaveLength(2)
+  })
+
+  it('does not re-focus the dialog when the parent re-renders with a new onClose', () => {
+    const props = {
+      item,
+      people: [alice, bob],
+      currentAssignees: ['alice'],
+      currentPortions: {},
+      onConfirm: vi.fn(),
+    }
+    const { rerender } = render(<SharedItemSplitter {...props} onClose={() => {}} />)
+    const cancel = screen.getByRole('button', { name: /cancel/i })
+    cancel.focus()
+
+    rerender(<SharedItemSplitter {...props} onClose={() => {}} />)
+
+    expect(document.activeElement).toBe(cancel)
+  })
 })

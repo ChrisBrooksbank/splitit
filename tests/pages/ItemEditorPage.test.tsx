@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import ItemEditorPage from '../../src/pages/ItemEditorPage'
+import { usePeopleStore } from '../../src/store/peopleStore'
+import { useAssignmentStore } from '../../src/store/assignmentStore'
 import { useBillStore } from '../../src/store/billStore'
 
 const mockNavigate = vi.fn()
@@ -93,8 +95,7 @@ describe('ItemEditorPage', () => {
     expect(screen.getByLabelText(/edit burger/i)).toBeInTheDocument()
   })
 
-  it('does not overwrite existing store items with ocrResult', () => {
-    // Pre-populate the store
+  it('replaces a stale bill (and its people/claims) when a fresh scan arrives', () => {
     useBillStore.getState().addLineItem({
       name: 'Existing Item',
       price: 500,
@@ -102,15 +103,30 @@ describe('ItemEditorPage', () => {
       confidence: 1.0,
       manuallyEdited: true,
     })
-    // Also set an OCR result
+    usePeopleStore.getState().addPerson('Old Person')
+    useAssignmentStore.getState().assignPerson('old-item', 'old-person')
     sessionStorage.setItem('ocrResult', 'Burger   $12.99\n')
 
     renderPage()
 
-    // Existing item should still be there
+    expect(screen.getByLabelText(/edit burger/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/edit existing item/i)).not.toBeInTheDocument()
+    expect(usePeopleStore.getState().people).toHaveLength(0)
+    expect(useAssignmentStore.getState().assignments).toEqual({})
+  })
+
+  it('keeps existing items when there is no new scan', () => {
+    useBillStore.getState().addLineItem({
+      name: 'Existing Item',
+      price: 500,
+      quantity: 1,
+      confidence: 1.0,
+      manuallyEdited: true,
+    })
+
+    renderPage()
+
     expect(screen.getByLabelText(/edit existing item/i)).toBeInTheDocument()
-    // OCR item should NOT have been added (store was not empty)
-    expect(screen.queryByLabelText(/edit burger/i)).not.toBeInTheDocument()
   })
 
   it('can add a new item manually', async () => {

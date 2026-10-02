@@ -42,13 +42,30 @@ describe('ItemEditorModal', () => {
     )
 
     await user.type(screen.getByLabelText('Item name'), 'Pizza')
-    await user.type(screen.getByLabelText('Total price'), '14.99')
+    await user.type(screen.getByLabelText('Total price'), '15.00')
     await user.clear(screen.getByLabelText('Qty'))
     await user.type(screen.getByLabelText('Qty'), '2')
     await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
-    // 14.99 total / 2 = 750 unit price (rounded)
+    // 15.00 total / 2 = 750 unit price
     expect(onSave).toHaveBeenCalledWith('Pizza', 750, 2)
+  })
+
+  it('keeps the exact total when it does not divide evenly by the quantity', async () => {
+    const onSave = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <ItemEditorModal title="Add Item" saveLabel="Add Item" onSave={onSave} onClose={vi.fn()} />
+    )
+
+    await user.type(screen.getByLabelText('Item name'), 'Pizza')
+    await user.type(screen.getByLabelText('Total price'), '10.00')
+    await user.clear(screen.getByLabelText('Qty'))
+    await user.type(screen.getByLabelText('Qty'), '3')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
+
+    // 3 × £3.33 would lose a penny, so the exact £10.00 is kept as one line
+    expect(onSave).toHaveBeenCalledWith('Pizza (×3)', 1000, 1)
   })
 
   it('converts price to integer cents', async () => {

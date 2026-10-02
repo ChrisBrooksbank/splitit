@@ -18,6 +18,8 @@ interface LiveSessionStore {
   destroyFn: (() => void) | null
 
   startSession: (role: 'host' | 'guest', roomCode: string) => void
+  /** Swap the room code after a host reconnect, keeping phase and claimed state */
+  setRoomCode: (roomCode: string) => void
   setPhase: (phase: SessionPhase) => void
   setMyPersonId: (personId: string) => void
   addGuest: (guest: GuestInfo) => void
@@ -55,6 +57,8 @@ export const useLiveSessionStore = create<LiveSessionStore>()((set) => ({
       phase: 'lobby',
       connectionStatus: 'connecting',
     }),
+
+  setRoomCode: (roomCode) => set({ roomCode }),
 
   setPhase: (phase) => set({ phase }),
 

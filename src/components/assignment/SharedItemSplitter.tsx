@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import type { LineItem, Person } from '../../types'
 import { formatCurrency } from '../../utils/formatCurrency'
+import { allocateItemCents } from '../../services/calculator/splitCalculator'
 
 interface SharedItemSplitterProps {
   item: LineItem
@@ -32,6 +33,11 @@ export default function SharedItemSplitter({
   })
 
   const dialogRef = useRef<HTMLDivElement>(null)
+  // Parents often pass a fresh onClose each render; a ref keeps the focus effect from re-running
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
 
   // Focus the dialog panel on mount, restore focus on unmount
   // Also handle Escape key to close dialog
@@ -41,7 +47,7 @@ export default function SharedItemSplitter({
 
     function handleEscape(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        onClose()
+        onCloseRef.current()
       }
     }
     document.addEventListener('keydown', handleEscape)
@@ -50,7 +56,7 @@ export default function SharedItemSplitter({
       document.removeEventListener('keydown', handleEscape)
       previouslyFocused?.focus()
     }
-  }, [onClose])
+  }, [])
 
   // Focus trap: keep Tab key inside the dialog panel
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
@@ -97,23 +103,14 @@ export default function SharedItemSplitter({
     onConfirm(personIds, portionResult)
   }
 
-  const evenShare = useMemo(() => {
-    if (selectedArray.length === 0) return formatCurrency(0)
-    return formatCurrency(Math.round(totalPrice / selectedArray.length))
-  }, [selectedArray.length, totalPrice])
-
-  const customShares = useMemo(() => {
-    if (selectedArray.length === 0) return {} as Record<string, string>
-    const totalWeight = selectedArray.reduce((sum, id) => sum + (portions[id] ?? 1), 0)
-    const result: Record<string, string> = {}
-    for (const id of selectedArray) {
-      const personWeight = portions[id] ?? 1
-      result[id] = formatCurrency(
-        totalWeight > 0 ? Math.round((totalPrice * personWeight) / totalWeight) : 0
-      )
-    }
-    return result
-  }, [selectedArray, portions, totalPrice])
+  // Same allocation the calculator uses, so the sheet always matches the final split
+  const shares = useMemo(() => {
+    const ids = Array.from(selected)
+    const weights = useCustom
+      ? Object.fromEntries(ids.map((id) => [id, portions[id] ?? 1]))
+      : undefined
+    return allocateItemCents(totalPrice, ids, weights)
+  }, [selected, useCustom, portions, totalPrice])
 
   return (
     // Backdrop
@@ -228,7 +225,7 @@ export default function SharedItemSplitter({
                         aria-label={`${person.name} portion count`}
                       />
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {customShares[person.id] ?? formatCurrency(0)}
+                        {formatCurrency(shares[person.id] ?? 0)}
                       </span>
                     </div>
                   )}
@@ -237,7 +234,7 @@ export default function SharedItemSplitter({
                 {/* Share amount (even split mode) */}
                 {!useCustom && isChecked && (
                   <span className="flex-shrink-0 text-sm text-gray-500 dark:text-gray-400">
-                    {evenShare}
+                    {formatCurrency(shares[person.id] ?? 0)}
                   </span>
                 )}
               </div>

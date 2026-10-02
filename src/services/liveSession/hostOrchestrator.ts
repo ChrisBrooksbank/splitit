@@ -14,8 +14,9 @@ export function buildSyncPayload(): SyncPayload {
   const { personTips } = useTipStore.getState()
   const { phase, guests } = useLiveSessionStore.getState()
 
+  // Only connected guests hold a name; a dropped guest must be able to reclaim theirs
   const claimedPersonIds = guests
-    .filter((g) => g.personId !== null)
+    .filter((g) => g.personId !== null && g.connected)
     .map((g) => g.personId as string)
 
   return {
@@ -42,6 +43,8 @@ export function createHostOrchestrator(peerService: RelayService) {
     const sessionStore = useLiveSessionStore.getState()
     const assignmentStore = useAssignmentStore.getState()
     const tipStore = useTipStore.getState()
+    const knownItem = (id: string) => useBillStore.getState().lineItems.some((i) => i.id === id)
+    const knownPerson = (id: string) => usePeopleStore.getState().people.some((p) => p.id === id)
 
     switch (message.type) {
       case 'IDENTIFY': {
@@ -55,21 +58,28 @@ export function createHostOrchestrator(peerService: RelayService) {
       }
 
       case 'CLAIM_ITEM': {
+        if (!knownItem(message.itemId) || !knownPerson(message.personId)) break
         assignmentStore.assignPerson(message.itemId, message.personId)
         debouncedBroadcast()
         break
       }
 
       case 'UNCLAIM_ITEM': {
+        if (!knownItem(message.itemId) || !knownPerson(message.personId)) break
         assignmentStore.unassignPerson(message.itemId, message.personId)
         debouncedBroadcast()
         break
       }
 
       case 'SET_ASSIGNEES': {
-        assignmentStore.setAssignees(message.itemId, [...new Set(message.personIds)])
-        if (Object.keys(message.portions).length > 0) {
-          assignmentStore.setPortions(message.itemId, message.portions)
+        if (!knownItem(message.itemId)) break
+        const personIds = [...new Set(message.personIds)].filter(knownPerson)
+        const portions = Object.fromEntries(
+          Object.entries(message.portions).filter(([id]) => personIds.includes(id))
+        )
+        assignmentStore.setAssignees(message.itemId, personIds)
+        if (Object.keys(portions).length > 0) {
+          assignmentStore.setPortions(message.itemId, portions)
         } else {
           assignmentStore.clearPortions(message.itemId)
         }
@@ -78,6 +88,7 @@ export function createHostOrchestrator(peerService: RelayService) {
       }
 
       case 'SET_TIP': {
+        if (!knownPerson(message.personId)) break
         if (message.mode === 'percentage') {
           tipStore.setPersonTipPercentage(message.personId, message.value)
         } else {
@@ -120,18 +131,17 @@ export function createHostOrchestrator(peerService: RelayService) {
     useLiveSessionStore.getState().disconnectGuest(peerId)
   }
 
-  // Subscribe to store changes so host's own edits broadcast to guests
-  const unsubAssignments = useAssignmentStore.subscribe(() => {
-    debouncedBroadcast()
-  })
-  const unsubTips = useTipStore.subscribe(() => {
-    debouncedBroadcast()
-  })
-  const unsubPeople = usePeopleStore.subscribe(() => {
-    debouncedBroadcast()
-  })
+  // Subscribed in start() and released in destroy() so the pair can be re-run after a reconnect
+  let unsubscribers: Array<() => void> = []
 
   const start = () => {
+    if (unsubscribers.length > 0) return
+    unsubscribers = [
+      // Host's own edits broadcast to guests
+      useAssignmentStore.subscribe(() => debouncedBroadcast()),
+      useTipStore.subscribe(() => debouncedBroadcast()),
+      usePeopleStore.subscribe(() => debouncedBroadcast()),
+    ]
     peerService.on('guest-message', handleGuestMessage)
     peerService.on('guest-connected', handleGuestConnected)
     peerService.on('guest-disconnected', handleGuestDisconnected)
@@ -139,9 +149,8 @@ export function createHostOrchestrator(peerService: RelayService) {
 
   const destroy = () => {
     debouncedBroadcast.flush()
-    unsubAssignments()
-    unsubTips()
-    unsubPeople()
+    unsubscribers.forEach((unsub) => unsub())
+    unsubscribers = []
     peerService.off('guest-message', handleGuestMessage)
     peerService.off('guest-connected', handleGuestConnected)
     peerService.off('guest-disconnected', handleGuestDisconnected)

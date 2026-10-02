@@ -4,7 +4,9 @@
 
 // Price at the end of a line: £12.99, 12.99, £1,234.56, -£2.00
 // Also allows leading OCR-corrupted digits (l/I in place of 1): $l2.99
-export const PRICE_PATTERN = /-?\s*[£$€]?\s*([lIoO\d]{1,4}[,.]?[lIoO\d]{0,3}[.,][lIoO\d]{2})\s*$/
+// A minus only counts when it touches the price/symbol: "Coke - 2.50" is a separator, "-2.50" a discount
+export const PRICE_PATTERN =
+  /(?:-\s*[£$€]\s*|-(?=[lIoO\d])|[£$€]\s*)?([lIoO\d]{1,4}[,.]?[lIoO\d]{0,3}[.,][lIoO\d]{2})\s*$/
 
 // Price with possible OCR digit errors (l/I → 1, O/o → 0) before parsing
 // Applied to a candidate price string only
@@ -18,6 +20,9 @@ export const QUANTITY_PATTERN = /^(\d+)\s*[xX×]\s+/
 // Quantity column at the start of a receipt row:
 //   "2 OLD MOUT 13.00", "1 28OZ STRAWB 8.90"
 export const QUANTITY_COLUMN_PATTERN = /^(\d{1,2})\s+(?=\S)/
+
+// A number followed by a size/unit is part of the name ("10 inch Pizza"), not a quantity
+export const SIZE_UNIT_PATTERN = /^(?:inch|in|oz|cl|ml|pint|pt|g|kg|lb)\b/i
 
 // Modifier/add-on lines: 2+ spaces of indent followed by -/+/*
 export const MODIFIER_PATTERN = /^\s{2,}[-+*]\s+/

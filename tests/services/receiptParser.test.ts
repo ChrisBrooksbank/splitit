@@ -817,4 +817,28 @@ describe('regressions: mergeReceipts keeps repeats within a photo', () => {
     const merged = mergeReceipts([a, b])
     expect(merged.lineItems.map((i) => i.name).sort()).toEqual(['Chips', 'Lager', 'Wine'])
   })
+
+  describe('regressions', () => {
+    const parse = (t: string) => parseReceipt(t).lineItems.map((i) => [i.name, i.price, i.quantity])
+
+    it('treats a spaced dash before the price as a separator, not a discount', () => {
+      expect(parse('Coke - 2.50')).toEqual([['Coke', 250, 1]])
+    })
+
+    it('still reads a dash touching the price as a discount', () => {
+      expect(parse('Voucher -2.50')).toEqual([['Voucher', -250, 1]])
+    })
+
+    it('does not read a leading number as a quantity when it does not divide the total', () => {
+      expect(parse('7 UP 2.50')).toEqual([['7 UP', 250, 1]])
+    })
+
+    it('does not read a size as a quantity', () => {
+      expect(parse('10 inch Pizza 8.00')).toEqual([['10 inch Pizza', 800, 1]])
+    })
+
+    it('still reads a dividing quantity column', () => {
+      expect(parse('2 Lager 11.00')).toEqual([['Lager', 550, 2]])
+    })
+  })
 })

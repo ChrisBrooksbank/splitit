@@ -32,8 +32,8 @@ describe('AddItemForm', () => {
     await user.type(screen.getByLabelText('Total price'), '12.99')
     await user.click(screen.getByRole('button', { name: 'Add Item' }))
 
-    // 12.99 total / 2 = 650 unit price (rounded)
-    expect(onAdd).toHaveBeenCalledWith('Burger', 650, 2)
+    // 12.99 doesn't split into 2 whole-penny units, so the exact total is kept as one line
+    expect(onAdd).toHaveBeenCalledWith('Burger (×2)', 1299, 1)
   })
 
   it('converts price to integer cents', async () => {

@@ -6,19 +6,19 @@ import type { SyncPayload } from '../services/liveSession/types'
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'error' | 'disconnected'
 
 export function useLiveSessionGuest(roomCode: string) {
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(() => {
-    const stored = useLiveSessionStore.getState().connectionStatus
-    return stored === 'disconnected' && useLiveSessionStore.getState().peerService
-      ? 'connected'
-      : (stored as ConnectionStatus)
-  })
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
+    () => useLiveSessionStore.getState().connectionStatus
+  )
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const storedStatus = useLiveSessionStore((s) => s.connectionStatus)
 
   // The relay peer outlives this component (it lives in the store), and so does its reconnect
   // logic. If it updates the store while we are remounted, mirror that here.
   useEffect(() => {
-    if (storedStatus !== 'disconnected') setConnectionStatus(storedStatus)
+    // 'disconnected' is the store's idle default, but once a peer exists it means a failed reconnect
+    if (storedStatus !== 'disconnected' || useLiveSessionStore.getState().peerService) {
+      setConnectionStatus(storedStatus)
+    }
   }, [storedStatus])
 
   const syncedState = useLiveSessionStore((s) => s.syncedState)
