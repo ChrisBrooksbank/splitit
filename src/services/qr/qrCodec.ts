@@ -204,6 +204,7 @@ export async function decodeFromQR(qrData: string): Promise<QRPayload> {
   }
 
   const payload = JSON.parse(json) as QRPayload
+  if (typeof payload !== 'object' || payload === null) throw new Error('Invalid QR payload')
   validatePayload(payload)
   return payload
 }
@@ -276,7 +277,9 @@ function validatePayload(payload: QRPayload): void {
       if (!Array.isArray(tip) || tip.length !== 2 || (tip[0] !== 'p' && tip[0] !== 'f')) {
         throw new Error('Invalid tips')
       }
-      if (!isWeight(tip[1])) throw new Error('Invalid tips')
+      if (!isWeight(tip[1]) || (tip[0] === 'f' && !Number.isInteger(tip[1]))) {
+        throw new Error('Invalid tips')
+      }
     }
   }
 }

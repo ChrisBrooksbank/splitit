@@ -46,19 +46,24 @@ export function useLiveSessionGuest(roomCode: string) {
       if (reconnecting) return
       reconnecting = true
       try {
-        await reconnectOnce()
+        // A failed attempt raises no further socket events, so keep retrying until we give up
+        while (await reconnectOnce()) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * reconnectCount))
+          if (useLiveSessionStore.getState().peerService !== peer) return
+        }
       } finally {
         reconnecting = false
       }
     }
 
-    const reconnectOnce = async () => {
+    // Resolves true when the attempt failed transiently and another should follow
+    const reconnectOnce = async (): Promise<boolean> => {
       reconnectCount++
       if (reconnectCount > MAX_RECONNECT_ATTEMPTS) {
         setConnectionStatus('error')
         setStatusMessage('Host disconnected')
         useLiveSessionStore.getState().setConnectionStatus('error')
-        return
+        return false
       }
 
       setConnectionStatus('reconnecting')
@@ -67,7 +72,7 @@ export function useLiveSessionGuest(roomCode: string) {
 
       try {
         const didReconnect = await peer.reconnectToHost(roomCode)
-        if (!didReconnect) return
+        if (!didReconnect) return false
 
         reconnectCount = 0
         setConnectionStatus('connected')
@@ -85,15 +90,17 @@ export function useLiveSessionGuest(roomCode: string) {
             displayName: person?.name ?? 'Guest',
           })
         }
+        return false
       } catch (err) {
         if (err instanceof RoomNotFoundError) {
           setConnectionStatus('error')
           setStatusMessage('Host disconnected')
           useLiveSessionStore.getState().setConnectionStatus('error')
-        } else {
-          setConnectionStatus('disconnected')
-          useLiveSessionStore.getState().setConnectionStatus('disconnected')
+          return false
         }
+        setConnectionStatus('disconnected')
+        useLiveSessionStore.getState().setConnectionStatus('disconnected')
+        return true
       }
     }
 

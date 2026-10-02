@@ -138,8 +138,13 @@ export const useAssignmentStore = create<AssignmentStore>()(
         }
 
         // Custom portions: sum of all assignee weights
-        const totalWeight = assignees.reduce((sum, id) => sum + (itemPortions[id] ?? 1), 0)
-        const personWeight = itemPortions[personId] ?? 1
+        // Same weight rules as allocateItemCents: missing = 1, non-positive/invalid = 0
+        const weightOf = (id: string) => {
+          const w = itemPortions[id] ?? 1
+          return Number.isFinite(w) && w > 0 ? w : 0
+        }
+        const totalWeight = assignees.reduce((sum, id) => sum + weightOf(id), 0)
+        const personWeight = weightOf(personId)
         return totalWeight > 0 ? personWeight / totalWeight : 1 / assignees.length
       },
 
