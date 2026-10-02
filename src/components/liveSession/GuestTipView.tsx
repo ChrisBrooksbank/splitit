@@ -1,5 +1,6 @@
 import type { SyncPayload } from '../../services/liveSession/types'
 import PersonTipCard from '../tip/PersonTipCard'
+import { personSubtotalCents } from '../../services/calculator/splitCalculator'
 
 interface GuestTipViewProps {
   syncedState: SyncPayload
@@ -21,22 +22,7 @@ export default function GuestTipView({
   if (!person || !tip) return null
 
   // Compute subtotal for this person (same math as splitCalculator)
-  let subtotalCents = 0
-  for (const item of lineItems) {
-    const assignees = assignments[item.id] ?? []
-    if (!assignees.includes(myPersonId)) continue
-
-    const itemPortions = portions[item.id]
-    let share: number
-    if (!itemPortions || Object.keys(itemPortions).length === 0) {
-      share = 1 / assignees.length
-    } else {
-      const totalWeight = assignees.reduce((sum, id) => sum + (itemPortions[id] ?? 1), 0)
-      const personWeight = itemPortions[myPersonId] ?? 1
-      share = totalWeight > 0 ? personWeight / totalWeight : 1 / assignees.length
-    }
-    subtotalCents += Math.round(item.price * item.quantity * share)
-  }
+  const subtotalCents = personSubtotalCents(lineItems, myPersonId, assignments, portions)
 
   return (
     <div className="space-y-4">

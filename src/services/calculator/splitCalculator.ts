@@ -2,13 +2,12 @@
  * Split Calculator — all math in integer cents.
  *
  * Algorithm:
+ *   For each item, its total (price * qty) is divided among the assignees by weight using
+ *   largest-remainder allocation, so the shares always add up to the item total exactly.
  *   For each person:
- *     subtotal = sum of (item.price * qty * personShareFraction) for their assigned items
+ *     subtotal = sum of their allocated item shares
  *     tipAmount = based on person's individual tip choice (percentage of subtotal or fixed)
  *     total = subtotal + tipAmount
- *
- *   Rounding adjustment: the person with the largest subtotal absorbs any cent difference
- *   so that grand totals balance exactly.
  */
 
 import type { LineItem, PersonTotal } from '../../types'
@@ -34,24 +33,79 @@ export interface SplitResult {
   grandTotal: number
 }
 
-/** Get a person's fractional share of an item (0–1). */
-function getPersonShare(
-  itemId: string,
+/**
+ * Divide an item's total (integer cents) among its assignees.
+ * Shares follow custom portion weights when present (otherwise equal) and always sum to the
+ * item total exactly: leftover cents go to the largest fractional remainders, ties to the
+ * earliest assignee.
+ */
+export function allocateItemCents(
+  totalCents: number,
+  assignees: string[],
+  itemPortions?: Record<string, number>
+): Record<string, number> {
+  const ids = Array.from(new Set(assignees))
+  const result: Record<string, number> = {}
+  if (ids.length === 0) return result
+
+  const hasPortions = !!itemPortions && Object.keys(itemPortions).length > 0
+  let weights = ids.map((id) => {
+    const w = hasPortions ? (itemPortions[id] ?? 1) : 1
+    return Number.isFinite(w) && w > 0 ? w : 0
+  })
+  let totalWeight = weights.reduce((sum, w) => sum + w, 0)
+  if (totalWeight <= 0) {
+    weights = ids.map(() => 1)
+    totalWeight = ids.length
+  }
+
+  const sign = totalCents < 0 ? -1 : 1
+  const magnitude = Math.abs(totalCents)
+  const exact = weights.map((w) => (magnitude * w) / totalWeight)
+  const floors = exact.map((x) => Math.floor(x))
+  let remainder = magnitude - floors.reduce((sum, f) => sum + f, 0)
+
+  const order = exact
+    .map((x, idx) => ({ idx, frac: x - Math.floor(x) }))
+    .sort((a, b) => b.frac - a.frac || a.idx - b.idx)
+  for (const { idx } of order) {
+    if (remainder <= 0) break
+    floors[idx] += 1
+    remainder -= 1
+  }
+
+  ids.forEach((id, idx) => {
+    result[id] = sign * floors[idx]
+  })
+  return result
+}
+
+/** A person's share of one item in cents (0 if they aren't an assignee). */
+export function personItemCents(
+  item: LineItem,
   personId: string,
   assignments: Record<string, string[]>,
   portions: Record<string, Record<string, number>>
 ): number {
-  const assignees = assignments[itemId] ?? []
-  if (!assignees.includes(personId) || assignees.length === 0) return 0
+  const shares = allocateItemCents(
+    item.price * item.quantity,
+    assignments[item.id] ?? [],
+    portions[item.id]
+  )
+  return shares[personId] ?? 0
+}
 
-  const itemPortions = portions[itemId]
-  if (!itemPortions || Object.keys(itemPortions).length === 0) {
-    return 1 / assignees.length
-  }
-
-  const totalWeight = assignees.reduce((sum, id) => sum + (itemPortions[id] ?? 1), 0)
-  const personWeight = itemPortions[personId] ?? 1
-  return totalWeight > 0 ? personWeight / totalWeight : 1 / assignees.length
+/** A person's pre-tip subtotal across all items, in cents. */
+export function personSubtotalCents(
+  lineItems: LineItem[],
+  personId: string,
+  assignments: Record<string, string[]>,
+  portions: Record<string, Record<string, number>>
+): number {
+  return lineItems.reduce(
+    (sum, item) => sum + personItemCents(item, personId, assignments, portions),
+    0
+  )
 }
 
 /** Calculate tip amount in cents for a person given their item subtotal. */
@@ -66,15 +120,16 @@ export function calculateSplit(input: SplitInput): SplitResult {
 
   // Step 1: Item subtotal per person (integer cents)
   const itemSubtotals: Record<string, number> = {}
-  for (const person of people) {
-    let subtotal = 0
-    for (const item of lineItems) {
-      const share = getPersonShare(item.id, person.id, assignments, portions)
-      if (share > 0) {
-        subtotal += Math.round(item.price * item.quantity * share)
-      }
+  for (const person of people) itemSubtotals[person.id] = 0
+  for (const item of lineItems) {
+    const shares = allocateItemCents(
+      item.price * item.quantity,
+      assignments[item.id] ?? [],
+      portions[item.id]
+    )
+    for (const person of people) {
+      itemSubtotals[person.id] += shares[person.id] ?? 0
     }
-    itemSubtotals[person.id] = subtotal
   }
 
   // Step 2: Bill subtotal = sum of all person item subtotals

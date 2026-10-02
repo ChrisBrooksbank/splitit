@@ -13,6 +13,13 @@ export function useLiveSessionGuest(roomCode: string) {
       : (stored as ConnectionStatus)
   })
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const storedStatus = useLiveSessionStore((s) => s.connectionStatus)
+
+  // The relay peer outlives this component (it lives in the store), and so does its reconnect
+  // logic. If it updates the store while we are remounted, mirror that here.
+  useEffect(() => {
+    if (storedStatus !== 'disconnected') setConnectionStatus(storedStatus)
+  }, [storedStatus])
 
   const syncedState = useLiveSessionStore((s) => s.syncedState)
   const myPersonId = useLiveSessionStore((s) => s.myPersonId)
@@ -22,18 +29,30 @@ export function useLiveSessionGuest(roomCode: string) {
     // If peer already exists in store (remount after navigation), skip initialization
     if (useLiveSessionStore.getState().peerService) return
 
+    // `cancelled` only covers the initial join (e.g. StrictMode's mount/unmount/mount). Once the
+    // peer is stored it must keep reconnecting even if this component unmounts and remounts.
     let cancelled = false
+    let reconnecting = false
     let reconnectCount = 0
     const MAX_RECONNECT_ATTEMPTS = 5
     const peer = new RelayService()
 
     peer.on('status-change', (msg) => {
-      if (!cancelled) setStatusMessage(msg)
+      setStatusMessage(msg)
     })
 
     const attemptReconnect = async () => {
-      if (cancelled) return
+      // A single drop can raise several connection-error events (relay ERROR + socket close)
+      if (reconnecting) return
+      reconnecting = true
+      try {
+        await reconnectOnce()
+      } finally {
+        reconnecting = false
+      }
+    }
 
+    const reconnectOnce = async () => {
       reconnectCount++
       if (reconnectCount > MAX_RECONNECT_ATTEMPTS) {
         setConnectionStatus('error')
@@ -48,7 +67,7 @@ export function useLiveSessionGuest(roomCode: string) {
 
       try {
         const didReconnect = await peer.reconnectToHost(roomCode)
-        if (cancelled || !didReconnect) return
+        if (!didReconnect) return
 
         reconnectCount = 0
         setConnectionStatus('connected')
@@ -67,15 +86,13 @@ export function useLiveSessionGuest(roomCode: string) {
           })
         }
       } catch (err) {
-        if (!cancelled) {
-          if (err instanceof RoomNotFoundError) {
-            setConnectionStatus('error')
-            setStatusMessage('Host disconnected')
-            useLiveSessionStore.getState().setConnectionStatus('error')
-          } else {
-            setConnectionStatus('disconnected')
-            useLiveSessionStore.getState().setConnectionStatus('disconnected')
-          }
+        if (err instanceof RoomNotFoundError) {
+          setConnectionStatus('error')
+          setStatusMessage('Host disconnected')
+          useLiveSessionStore.getState().setConnectionStatus('error')
+        } else {
+          setConnectionStatus('disconnected')
+          useLiveSessionStore.getState().setConnectionStatus('disconnected')
         }
       }
     }
@@ -109,7 +126,7 @@ export function useLiveSessionGuest(roomCode: string) {
         })
 
         peer.on('connection-error', () => {
-          if (!cancelled) attemptReconnect()
+          void attemptReconnect()
         })
       } catch {
         if (!cancelled) {

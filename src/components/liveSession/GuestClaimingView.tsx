@@ -3,6 +3,7 @@ import type { SyncPayload } from '../../services/liveSession/types'
 import AssignableItem from '../assignment/AssignableItem'
 import RunningTotal from '../assignment/RunningTotal'
 import SharedItemSplitter from '../assignment/SharedItemSplitter'
+import { personSubtotalCents } from '../../services/calculator/splitCalculator'
 
 interface GuestClaimingViewProps {
   syncedState: SyncPayload
@@ -28,22 +29,7 @@ export default function GuestClaimingView({
 
   // Running subtotal for this guest (cents)
   const guestSubtotal = useMemo(() => {
-    let subtotal = 0
-    for (const item of lineItems) {
-      const assignees = assignments[item.id] ?? []
-      if (!assignees.includes(myPersonId)) continue
-      const itemPortions = portions[item.id]
-      let share: number
-      if (!itemPortions || Object.keys(itemPortions).length === 0) {
-        share = 1 / assignees.length
-      } else {
-        const totalWeight = assignees.reduce((sum, id) => sum + (itemPortions[id] ?? 1), 0)
-        const personWeight = itemPortions[myPersonId] ?? 1
-        share = totalWeight > 0 ? personWeight / totalWeight : 1 / assignees.length
-      }
-      subtotal += Math.round(item.price * item.quantity * share)
-    }
-    return subtotal
+    return personSubtotalCents(lineItems, myPersonId, assignments, portions)
   }, [lineItems, assignments, portions, myPersonId])
 
   if (!currentPerson) return null

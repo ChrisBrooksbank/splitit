@@ -13,6 +13,7 @@ import SharedItemSplitter from '../components/assignment/SharedItemSplitter'
 import StepIndicator from '../components/layout/StepIndicator'
 import ShareSessionQRModal from '../components/liveSession/ShareSessionQRModal'
 import type { LineItem, Person } from '../types'
+import { personSubtotalCents } from '../services/calculator/splitCalculator'
 
 type Step = 'who-are-you' | 'claiming' | 'handoff'
 
@@ -53,15 +54,7 @@ export default function AssignmentPage() {
   // Running subtotal for the current person (cents)
   const currentPersonSubtotal = useMemo(() => {
     if (!currentPersonId) return 0
-    const { getPersonShare } = useAssignmentStore.getState()
-    let subtotal = 0
-    for (const item of lineItems) {
-      const share = getPersonShare(item.id, currentPersonId)
-      if (share > 0) {
-        subtotal += Math.round(item.price * item.quantity * share)
-      }
-    }
-    return subtotal
+    return personSubtotalCents(lineItems, currentPersonId, assignments, portions)
   }, [currentPersonId, lineItems, assignments, portions])
 
   // For each item, get list of Person objects assigned

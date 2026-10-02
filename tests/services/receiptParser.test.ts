@@ -777,3 +777,44 @@ TOTAL              $11.32
     expect(parsePriceCents('0.00')).toBe(0)
   })
 })
+
+describe('regressions: items mistaken for noise or metadata', () => {
+  it('keeps items whose names contain table/sub', () => {
+    const result = parseReceipt(
+      ['Mixed Vegetable 3.50', 'Italian Sub 8.50', 'Sub Roll 4.50', 'Subtotal 16.50'].join('\n')
+    )
+    expect(result.lineItems.map((i) => i.name)).toEqual([
+      'Mixed Vegetable',
+      'Italian Sub',
+      'Sub Roll',
+    ])
+    expect(result.detectedSubtotal).toBe(1650)
+  })
+
+  it('still skips real table/server lines', () => {
+    const result = parseReceipt(['Table 12', 'Server: Jane', 'Burger 9.00'].join('\n'))
+    expect(result.lineItems.map((i) => i.name)).toEqual(['Burger'])
+  })
+
+  it('keeps total exact when line total does not divide by quantity', () => {
+    const result = parseReceipt('3 Wings 10.00')
+    expect(result.lineItems).toHaveLength(1)
+    expect(result.lineItems[0].price * result.lineItems[0].quantity).toBe(1000)
+  })
+})
+
+describe('regressions: mergeReceipts keeps repeats within a photo', () => {
+  it('does not collapse identical items from one receipt', () => {
+    const one = parseReceipt('Lager 5.50\nLager 5.50\nChips 3.00')
+    const two = parseReceipt('Wine 9.00')
+    const merged = mergeReceipts([one, two])
+    expect(merged.lineItems.filter((i) => i.name === 'Lager')).toHaveLength(2)
+  })
+
+  it('still dedups the same item seen in overlapping photos', () => {
+    const a = parseReceipt('Lager 5.50\nChips 3.00')
+    const b = parseReceipt('Chips 3.00\nWine 9.00')
+    const merged = mergeReceipts([a, b])
+    expect(merged.lineItems.map((i) => i.name).sort()).toEqual(['Chips', 'Lager', 'Wine'])
+  })
+})

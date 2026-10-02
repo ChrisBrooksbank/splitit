@@ -234,6 +234,51 @@ function validatePayload(payload: QRPayload): void {
       throw new Error('Invalid person data types')
     }
   }
+  for (const [, price, qty] of payload.i) {
+    if (!Number.isInteger(price) || !Number.isInteger(qty) || qty < 1) {
+      throw new Error('Invalid item price or quantity')
+    }
+  }
+
+  const isIndex = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= 0
+  const isWeight = (n: unknown): n is number =>
+    typeof n === 'number' && Number.isFinite(n) && n >= 0
+
+  if (payload.a !== undefined) {
+    if (typeof payload.a !== 'object' || payload.a === null || Array.isArray(payload.a)) {
+      throw new Error('Invalid assignments')
+    }
+    for (const personIdxs of Object.values(payload.a)) {
+      if (!Array.isArray(personIdxs) || !personIdxs.every(isIndex)) {
+        throw new Error('Invalid assignments')
+      }
+    }
+  }
+  if (payload.o !== undefined) {
+    if (typeof payload.o !== 'object' || payload.o === null || Array.isArray(payload.o)) {
+      throw new Error('Invalid portions')
+    }
+    for (const weights of Object.values(payload.o)) {
+      if (
+        typeof weights !== 'object' ||
+        weights === null ||
+        !Object.values(weights).every(isWeight)
+      ) {
+        throw new Error('Invalid portions')
+      }
+    }
+  }
+  if (payload.t !== undefined) {
+    if (typeof payload.t !== 'object' || payload.t === null || Array.isArray(payload.t)) {
+      throw new Error('Invalid tips')
+    }
+    for (const tip of Object.values(payload.t)) {
+      if (!Array.isArray(tip) || tip.length !== 2 || (tip[0] !== 'p' && tip[0] !== 'f')) {
+        throw new Error('Invalid tips')
+      }
+      if (!isWeight(tip[1])) throw new Error('Invalid tips')
+    }
+  }
 }
 
 // --- Convert payload to store data ---
@@ -269,7 +314,7 @@ export function payloadToStoreData(payload: QRPayload): StoreData {
 
   // Map index-based assignments back to ID-based
   const assignments: Record<string, string[]> = {}
-  for (const [itemIdxStr, personIdxs] of Object.entries(payload.a)) {
+  for (const [itemIdxStr, personIdxs] of Object.entries(payload.a ?? {})) {
     const itemId = itemIds[Number(itemIdxStr)]
     if (!itemId) continue
     assignments[itemId] = personIdxs

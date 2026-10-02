@@ -11,6 +11,7 @@ import { useLiveSessionStore } from '../store/liveSessionStore'
 import PersonTipCard from '../components/tip/PersonTipCard'
 import StepIndicator from '../components/layout/StepIndicator'
 import ShareSessionQRModal from '../components/liveSession/ShareSessionQRModal'
+import { personSubtotalCents } from '../services/calculator/splitCalculator'
 
 /**
  * Calculate each person's pre-tip subtotal (items only).
@@ -19,23 +20,16 @@ import ShareSessionQRModal from '../components/liveSession/ShareSessionQRModal'
 function usePersonSubtotals() {
   const { people } = usePeopleStore()
   const { lineItems } = useBillStore()
-  const { getPersonShare } = useAssignmentStore()
+  const { assignments, portions } = useAssignmentStore()
 
   return useMemo(() => {
     const preTipSubtotals: Record<string, number> = {}
     for (const person of people) {
-      let subtotal = 0
-      for (const item of lineItems) {
-        const share = getPersonShare(item.id, person.id)
-        if (share > 0) {
-          subtotal += Math.round(item.price * item.quantity * share)
-        }
-      }
-      preTipSubtotals[person.id] = subtotal
+      preTipSubtotals[person.id] = personSubtotalCents(lineItems, person.id, assignments, portions)
     }
 
     return preTipSubtotals
-  }, [people, lineItems, getPersonShare])
+  }, [people, lineItems, assignments, portions])
 }
 
 export default function TipSelectionPage() {

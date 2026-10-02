@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, Receipt, FileEdit, ImageIcon, XCircle } from 'lucide
 import { useHistoryStore } from '../store/historyStore'
 import { useBillStore } from '../store/billStore'
 import { formatCurrency } from '../utils/formatCurrency'
+import { personItemCents } from '../services/calculator/splitCalculator'
 import type { BillSession, Person, LineItem, PersonTotal } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -91,7 +92,12 @@ function ReadOnlyPersonCard({ person, personTotal, session }: ReadOnlyPersonCard
         ) : (
           items.map((item: LineItem) => {
             const shareCount = assignees(item.id).length
-            const itemTotal = Math.round((item.price * item.quantity) / shareCount)
+            const itemTotal = personItemCents(
+              item,
+              person.id,
+              Object.fromEntries(session.assignments),
+              session.portions ?? {}
+            )
             const label =
               item.quantity > 1 || shareCount > 1
                 ? `${item.name}${item.quantity > 1 ? ` ×${item.quantity}` : ''}${shareCount > 1 ? ` (÷${shareCount})` : ''}`

@@ -33,13 +33,13 @@ export const SKIP_PATTERNS: RegExp[] = [
   /^\s*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\s*$/, // date-only lines
   /^\s*date\s*[:#]?\s*\d/i, // DATE: 06/05/2026
   /^\s*time\s*[:#]?\s*\d/i, // TIME: 19:42
-  /table\s*#?\s*\d+/i, // TABLE #12
-  /server\s*[:#]?\s*\w+/i, // SERVER: Jane
-  /cashier\s*[:#]?\s*\w+/i, // CASHIER: 42
-  /guest\s*count/i, // GUEST COUNT: 4
-  /order\s*#?\s*\d+/i, // ORDER #1234
+  /\btable\s*#?\s*\d+/i, // TABLE #12 (word boundary: "Vegetable 3.50" is food)
+  /\bserver\s*[:#]?\s*\w+/i, // SERVER: Jane
+  /\bcashier\s*[:#]?\s*\w+/i, // CASHIER: 42
+  /\bguest\s*count/i, // GUEST COUNT: 4
+  /\border\s*#?\s*\d+/i, // ORDER #1234
   /#\s*order\s*\d*/i, // #ORDER 9824
-  /check\s*#?\s*\d+/i, // CHECK #99
+  /\bcheck\s*#?\s*\d+/i, // CHECK #99
   /^\s*receipt\s*#/i, // RECEIPT #
   /^\s*\*+\s*$/, // lines of only asterisks
   /^\s*$/, // blank lines
@@ -52,7 +52,11 @@ export const METADATA_PATTERNS: {
   key: 'subtotal' | 'tax' | 'total' | 'tip' | 'change' | 'payment' | 'discount'
   pattern: RegExp
 }[] = [
-  { key: 'subtotal', pattern: /\b(?:sub\s*total|subtotal|sub-total|sub)\b/i },
+  // A bare "SUB" only counts as a label when followed by just a price ("Sub Roll 4.50" is food)
+  {
+    key: 'subtotal',
+    pattern: /\b(?:sub\s*total|subtotal|sub-total)\b|^\s*sub\b\s*[:.]?\s*[£$€]?\s*[lIoO\d]/i,
+  },
   {
     key: 'tax',
     pattern: /\b(?:tax|hst|gst|pst|vat|sales\s*tax|state\s*tax|city\s*tax)\b/i,
@@ -65,7 +69,7 @@ export const METADATA_PATTERNS: {
       /\b(?:cash|credit|debit|visa|mastercard|amex|discover|card|contactless|payment|paid)\b/i,
   },
   { key: 'change', pattern: /\b(?:change|change\s*due)\b/i },
-  { key: 'discount', pattern: /\b(?:discount|coupon|promo|savings?|off)\b/i },
+  { key: 'discount', pattern: /\b(?:discount|coupon|promo|savings?)\b|%\s*off\b/i },
 ]
 
 /**

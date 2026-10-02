@@ -19,6 +19,7 @@ import {
   MODIFIER_PATTERN,
   parsePriceCents,
 } from '../../utils/receiptPatterns'
+import { toUnitPricing } from '../../utils/lineTotal'
 
 export interface ParsedReceipt {
   lineItems: LineItem[]
@@ -145,16 +146,32 @@ export function parseReceipt(ocrText: string): ParsedReceipt {
  * Only used for multi-photo; single-photo preserves intentional duplicates.
  */
 export function mergeReceipts(receipts: ParsedReceipt[]): ParsedReceipt {
-  // Collect all line items, dedup by normalized key
-  const seen = new Map<string, LineItem>()
+  // Dedup items that appear in overlapping photos, but keep genuine repeats within a single
+  // photo: for each normalized key, keep the largest group of identical items seen in any one
+  // receipt (taking the higher-confidence reading position by position).
+  const seen = new Map<string, LineItem[]>()
 
   for (const receipt of receipts) {
+    const groups = new Map<string, LineItem[]>()
     for (const item of receipt.lineItems) {
       const key = `${normalize(item.name)}|${item.price}|${item.quantity}`
+      const group = groups.get(key)
+      if (group) group.push(item)
+      else groups.set(key, [item])
+    }
+
+    for (const [key, group] of groups) {
       const existing = seen.get(key)
-      if (!existing || item.confidence > existing.confidence) {
-        seen.set(key, item)
+      if (!existing) {
+        seen.set(key, [...group])
+        continue
       }
+      const merged = group.length > existing.length ? [...group] : [...existing]
+      const other = group.length > existing.length ? existing : group
+      other.forEach((item, idx) => {
+        if (item.confidence > merged[idx].confidence) merged[idx] = item
+      })
+      seen.set(key, merged)
     }
   }
 
@@ -165,7 +182,7 @@ export function mergeReceipts(receipts: ParsedReceipt[]): ParsedReceipt {
   const detectedTotal = receipts.find((r) => r.detectedTotal !== null)?.detectedTotal ?? null
 
   // Validate merged result
-  const mergedItems = Array.from(seen.values())
+  const mergedItems = Array.from(seen.values()).flat()
   const validationWarnings: string[] = []
   if (mergedItems.length > 0 && detectedSubtotal !== null) {
     const itemsTotal = mergedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -331,13 +348,13 @@ function extractLineItem(line: string): LineItem | null {
   // The price on the receipt line is the line total (e.g. "2 X Soup  16.00"
   // means 16.00 for both soups). Divide by quantity to get the unit price,
   // since the rest of the app treats `price` as unit price.
-  const unitPrice = quantity > 1 ? Math.round(finalCents / quantity) : finalCents
+  const priced = toUnitPricing(name, finalCents, quantity)
 
   return {
     id: nanoid(),
-    name,
-    price: unitPrice,
-    quantity,
+    name: priced.name,
+    price: priced.price,
+    quantity: priced.quantity,
     confidence,
     manuallyEdited: false,
   }

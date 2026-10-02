@@ -14,6 +14,7 @@ interface SerializedSession {
   people: Person[]
   lineItems: LineItem[]
   assignments: Record<string, string[]>
+  portions?: Record<string, Record<string, number>>
   tipConfig: TipConfig
   totals: PersonTotal[]
   photoDataUrls?: string[]

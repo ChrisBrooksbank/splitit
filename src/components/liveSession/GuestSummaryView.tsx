@@ -1,6 +1,7 @@
 import type { SyncPayload } from '../../services/liveSession/types'
 import { calculateSplit } from '../../services/calculator/splitCalculator'
 import { formatCurrency } from '../../utils/formatCurrency'
+import { personItemCents } from '../../services/calculator/splitCalculator'
 
 interface GuestSummaryViewProps {
   syncedState: SyncPayload
@@ -31,17 +32,10 @@ export default function GuestSummaryView({ syncedState, myPersonId }: GuestSumma
       return assignees.includes(myPersonId)
     })
     .map((item) => {
-      const assignees = assignments[item.id] ?? []
-      const itemPortions = portions[item.id]
-      let share: number
-      if (!itemPortions || Object.keys(itemPortions).length === 0) {
-        share = 1 / assignees.length
-      } else {
-        const totalWeight = assignees.reduce((sum, id) => sum + (itemPortions[id] ?? 1), 0)
-        const personWeight = itemPortions[myPersonId] ?? 1
-        share = totalWeight > 0 ? personWeight / totalWeight : 1 / assignees.length
+      return {
+        ...item,
+        shareAmount: personItemCents(item, myPersonId, assignments, portions),
       }
-      return { ...item, shareAmount: Math.round(item.price * item.quantity * share) }
     })
 
   return (
