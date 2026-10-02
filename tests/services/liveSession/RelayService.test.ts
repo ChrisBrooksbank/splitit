@@ -319,6 +319,44 @@ describe('RelayService', () => {
     })
   })
 
+  describe('guest message validation (host side)', () => {
+    async function startHostAndGetMessages() {
+      const guestMessage = vi.fn()
+      service.on('guest-message', guestMessage)
+      const promise = service.startHost()
+      await waitForCreateRoom()
+      mockWsInstance!.receiveMessage({ type: 'ROOM_CREATED', roomCode: 'HOST01', peerId: 'h' })
+      await promise
+      return guestMessage
+    }
+
+    it.each([
+      ['missing mode', { type: 'SET_TIP', personId: 'p1', value: 10 }],
+      ['unknown mode', { type: 'SET_TIP', personId: 'p1', mode: 'x', value: 10 }],
+      ['negative tip', { type: 'SET_TIP', personId: 'p1', mode: 'percentage', value: -5 }],
+      ['huge percentage', { type: 'SET_TIP', personId: 'p1', mode: 'percentage', value: 5000 }],
+      [
+        'negative portion',
+        { type: 'SET_ASSIGNEES', itemId: 'i', personIds: ['a'], portions: { a: -1 } },
+      ],
+      [
+        'non-string personIds',
+        { type: 'SET_ASSIGNEES', itemId: 'i', personIds: [1], portions: {} },
+      ],
+    ])('rejects %s', async (_label, payload) => {
+      const guestMessage = await startHostAndGetMessages()
+      mockWsInstance!.receiveMessage({ type: 'RELAY', from: 'g', payload })
+      expect(guestMessage).not.toHaveBeenCalled()
+    })
+
+    it('accepts a valid SET_TIP', async () => {
+      const guestMessage = await startHostAndGetMessages()
+      const payload = { type: 'SET_TIP', personId: 'p1', mode: 'percentage', value: 12.5 }
+      mockWsInstance!.receiveMessage({ type: 'RELAY', from: 'g', payload })
+      expect(guestMessage).toHaveBeenCalledWith('g', payload)
+    })
+  })
+
   describe('guest message handling', () => {
     it('emits host-message on RELAY with valid host message', async () => {
       const hostMessage = vi.fn()

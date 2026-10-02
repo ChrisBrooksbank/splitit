@@ -67,13 +67,14 @@ describe('parseAiResponse', () => {
   })
 
   it('handles price rounding edge cases', () => {
-    // 3 × item at £10.01 total → 1001 / 3 = 334 pence (rounded)
+    // 3 × item at £10.01 total doesn't divide evenly: keep the exact total as one item
     const input = JSON.stringify({
       items: [{ name: 'Drink', price: 10.01, qty: 3 }],
     })
     const result = parseAiResponse(input)
-    expect(result[0].price).toBe(334)
-    expect(result[0].quantity).toBe(3)
+    expect(result[0].price).toBe(1001)
+    expect(result[0].quantity).toBe(1)
+    expect(result[0].name).toBe('Drink (×3)')
   })
 
   it('handles multiple items', () => {
@@ -88,7 +89,8 @@ describe('parseAiResponse', () => {
     expect(result).toHaveLength(3)
     expect(result[0].price).toBe(1500)
     expect(result[1].price).toBe(225) // 450 / 2
-    expect(result[2].price).toBe(67) // 200 / 3 = 66.67 → 67
+    expect(result[2].price).toBe(200) // 200 / 3 doesn't divide: exact total kept, qty 1
+    expect(result[2].quantity).toBe(1)
   })
 
   it('accepts GBP string prices and strips quantity prefixes from names', () => {

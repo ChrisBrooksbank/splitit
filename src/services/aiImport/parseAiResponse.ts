@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid'
 import type { LineItem } from '../../types'
+import { toUnitPricing } from '../../utils/lineTotal'
 
 interface AiItem {
   name: string
@@ -45,13 +46,13 @@ export function parseAiResponse(text: string): LineItem[] {
   return items.map((item) => {
     const qty = typeof item.qty === 'number' && item.qty >= 1 ? Math.round(item.qty) : 1
     const lineTotalPence = Math.round(item.price * 100)
-    const unitPricePence = Math.round(lineTotalPence / qty)
+    const priced = toUnitPricing(item.name, lineTotalPence, qty)
 
     return {
       id: nanoid(),
-      name: item.name,
-      price: unitPricePence,
-      quantity: qty,
+      name: priced.name,
+      price: priced.price,
+      quantity: priced.quantity,
       confidence: 1.0,
       manuallyEdited: false,
     }

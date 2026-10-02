@@ -1,6 +1,10 @@
 import type { GuestMessage, HostMessage } from './types'
 import { RELAY_URL, CONNECT_TIMEOUT_MS, MAX_RETRIES, retryDelayMs } from './relayConfig'
 
+const MAX_TIP_PERCENTAGE = 100
+const MAX_TIP_FIXED_CENTS = 10_000_000
+const MAX_PERSON_NAME_LENGTH = 50
+
 export class RoomNotFoundError extends Error {
   constructor() {
     super('Room not found')
@@ -447,13 +451,29 @@ export class RelayService {
         return (
           typeof msg.itemId === 'string' &&
           Array.isArray(msg.personIds) &&
+          msg.personIds.every((id) => typeof id === 'string') &&
           typeof msg.portions === 'object' &&
-          msg.portions !== null
+          msg.portions !== null &&
+          !Array.isArray(msg.portions) &&
+          Object.values(msg.portions).every(
+            (w) => typeof w === 'number' && Number.isFinite(w) && w >= 0
+          )
         )
       case 'SET_TIP':
-        return typeof msg.personId === 'string' && typeof msg.value === 'number'
+        return (
+          typeof msg.personId === 'string' &&
+          (msg.mode === 'percentage' || msg.mode === 'fixed') &&
+          typeof msg.value === 'number' &&
+          Number.isFinite(msg.value) &&
+          msg.value >= 0 &&
+          msg.value <= (msg.mode === 'percentage' ? MAX_TIP_PERCENTAGE : MAX_TIP_FIXED_CENTS)
+        )
       case 'ADD_PERSON':
-        return typeof msg.name === 'string' && msg.name.trim().length > 0
+        return (
+          typeof msg.name === 'string' &&
+          msg.name.trim().length > 0 &&
+          msg.name.length <= MAX_PERSON_NAME_LENGTH
+        )
       default:
         return false
     }

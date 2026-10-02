@@ -5,6 +5,7 @@ import { useLiveSessionStore } from '../../src/store/liveSessionStore'
 
 const mockJoinAsGuest = vi.fn()
 const mockDestroy = vi.fn()
+const mockReconnectToHost = vi.fn()
 const mockSendToHost = vi.fn()
 const handlers: Record<string, (...args: unknown[]) => void> = {}
 
@@ -14,7 +15,7 @@ vi.mock('../../src/services/liveSession/RelayService', () => ({
     destroy = mockDestroy
     sendToHost = mockSendToHost
     isConnected = vi.fn(() => true)
-    reconnectToHost = vi.fn()
+    reconnectToHost = mockReconnectToHost
     on = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
       handlers[event] = handler
     })
@@ -45,6 +46,40 @@ describe('useLiveSessionGuest', () => {
 
     expect(result.current.connectionStatus).toBe('connected')
     expect(mockJoinAsGuest).toHaveBeenCalledWith('room-123')
+  })
+
+  it('still reconnects after the hook unmounts (peer outlives the component)', async () => {
+    mockReconnectToHost.mockResolvedValue(true)
+    const { unmount } = renderHook(() => useLiveSessionGuest('room-123'))
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    unmount()
+    await act(async () => {
+      handlers['connection-error']?.(new Error('Relay connection lost'))
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(mockReconnectToHost).toHaveBeenCalledWith('room-123')
+  })
+
+  it('treats back-to-back connection errors as one reconnect attempt', async () => {
+    let resolveReconnect: (v: boolean) => void = () => {}
+    mockReconnectToHost.mockReturnValue(new Promise<boolean>((r) => (resolveReconnect = r)))
+    renderHook(() => useLiveSessionGuest('room-123'))
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    await act(async () => {
+      handlers['connection-error']?.(new Error('Host disconnected'))
+      handlers['connection-error']?.(new Error('Connection to host closed'))
+      resolveReconnect(true)
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(mockReconnectToHost).toHaveBeenCalledTimes(1)
   })
 
   it('sets error status on connection failure', async () => {

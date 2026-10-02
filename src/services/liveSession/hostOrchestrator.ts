@@ -67,7 +67,7 @@ export function createHostOrchestrator(peerService: RelayService) {
       }
 
       case 'SET_ASSIGNEES': {
-        assignmentStore.setAssignees(message.itemId, message.personIds)
+        assignmentStore.setAssignees(message.itemId, [...new Set(message.personIds)])
         if (Object.keys(message.portions).length > 0) {
           assignmentStore.setPortions(message.itemId, message.portions)
         } else {

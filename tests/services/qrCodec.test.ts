@@ -133,6 +133,26 @@ describe('QR Codec', () => {
     })
   })
 
+  describe('malformed optional fields', () => {
+    const base = { v: 1, i: [['Burger', 1000, 1]], p: [['Alice', '#fff']], a: {} }
+    const encode = (extra: object) => 'splitit:raw:' + JSON.stringify({ ...base, ...extra })
+
+    it.each([
+      ['tips not tuples', { t: { 0: 'oops' } }, 'Invalid tips'],
+      ['tips with bad mode', { t: { 0: ['z', 5] } }, 'Invalid tips'],
+      ['negative tip', { t: { 0: ['p', -5] } }, 'Invalid tips'],
+      ['portions with strings', { o: { 0: { 0: 'x' } } }, 'Invalid portions'],
+      ['assignments not arrays', { a: { 0: 'x' } }, 'Invalid assignments'],
+    ])('rejects %s', async (_label, extra, message) => {
+      await expect(decodeFromQR(encode(extra))).rejects.toThrow(message)
+    })
+
+    it('rejects non-integer prices and zero quantity', async () => {
+      await expect(decodeFromQR(encode({ i: [['Burger', 10.5, 1]] }))).rejects.toThrow('price')
+      await expect(decodeFromQR(encode({ i: [['Burger', 1000, 0]] }))).rejects.toThrow('quantity')
+    })
+  })
+
   describe('payloadToStoreData', () => {
     it('produces valid objects with fresh IDs', () => {
       const payload = {

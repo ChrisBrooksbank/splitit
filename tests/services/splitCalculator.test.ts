@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateSplit } from '../../src/services/calculator/splitCalculator'
+import { calculateSplit, allocateItemCents } from '../../src/services/calculator/splitCalculator'
 import type { SplitInput } from '../../src/services/calculator/splitCalculator'
 import type { PersonTip } from '../../src/store/tipStore'
 
@@ -254,5 +254,49 @@ describe('calculateSplit', () => {
 
     const result = calculateSplit(input)
     expect(result.personTotals[0].subtotal).toBe(1000)
+  })
+})
+
+describe('allocateItemCents', () => {
+  it('always sums to the item total (3-way split of £10.00)', () => {
+    const shares = allocateItemCents(1000, ['a', 'b', 'c'])
+    expect(Object.values(shares).reduce((s, v) => s + v, 0)).toBe(1000)
+    expect(Object.values(shares).sort()).toEqual([333, 333, 334])
+  })
+
+  it('respects portion weights and still sums exactly', () => {
+    const shares = allocateItemCents(1001, ['a', 'b'], { a: 1, b: 2 })
+    expect(shares.a + shares.b).toBe(1001)
+    expect(shares.b).toBeGreaterThan(shares.a)
+  })
+
+  it('ignores negative weights and falls back to equal when all weights are zero', () => {
+    expect(allocateItemCents(1000, ['a', 'b'], { a: -5, b: 1 })).toEqual({ a: 0, b: 1000 })
+    expect(allocateItemCents(1000, ['a', 'b'], { a: 0, b: 0 })).toEqual({ a: 500, b: 500 })
+  })
+
+  it('handles negative totals (discounts) without losing cents', () => {
+    const shares = allocateItemCents(-1000, ['a', 'b', 'c'])
+    expect(Object.values(shares).reduce((s, v) => s + v, 0)).toBe(-1000)
+  })
+
+  it('ignores duplicate assignees', () => {
+    expect(allocateItemCents(1000, ['a', 'a', 'b'])).toEqual({ a: 500, b: 500 })
+  })
+})
+
+describe('calculateSplit rounding', () => {
+  it('person subtotals add up to the assigned item total', () => {
+    const result = calculateSplit({
+      people: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+      lineItems: [
+        { id: 'i', name: 'Pizza', price: 1000, quantity: 1, confidence: 1, manuallyEdited: false },
+      ],
+      assignments: { i: ['a', 'b', 'c'] },
+      portions: {},
+      personTips: {},
+    })
+    expect(result.billSubtotal).toBe(1000)
+    expect(result.grandTotal).toBe(1000)
   })
 })

@@ -9,7 +9,7 @@ import { useAssignmentStore } from '../store/assignmentStore'
 import { useTipStore } from '../store/tipStore'
 import { useHistoryStore } from '../store/historyStore'
 import { useLiveSessionStore } from '../store/liveSessionStore'
-import { calculateSplit } from '../services/calculator/splitCalculator'
+import { calculateSplit, personItemCents } from '../services/calculator/splitCalculator'
 import { formatCurrency } from '../utils/formatCurrency'
 import { consumeReceiptPhotos } from '../utils/photoThumbnail'
 import StepIndicator from '../components/layout/StepIndicator'
@@ -23,7 +23,7 @@ import type { Person, LineItem, PersonTotal } from '../types'
 interface PersonSummaryCardProps {
   person: Person
   personTotal: PersonTotal
-  items: { item: LineItem; shareCount: number }[]
+  items: { item: LineItem; shareCount: number; cents: number }[]
 }
 
 const PersonSummaryCard = memo(function PersonSummaryCard({
@@ -58,8 +58,7 @@ const PersonSummaryCard = memo(function PersonSummaryCard({
         {items.length === 0 ? (
           <p className="text-sm text-gray-400 dark:text-gray-500 italic">No items</p>
         ) : (
-          items.map(({ item, shareCount }) => {
-            const itemTotal = Math.round((item.price * item.quantity) / shareCount)
+          items.map(({ item, shareCount, cents: itemTotal }) => {
             const label =
               item.quantity > 1 || shareCount > 1
                 ? `${item.name}${item.quantity > 1 ? ` ×${item.quantity}` : ''}${shareCount > 1 ? ` (÷${shareCount})` : ''}`
@@ -126,19 +125,23 @@ export default function SummaryPage() {
 
   // Build per-person item lists
   const itemsByPerson = useMemo(() => {
-    const map = new Map<string, { item: LineItem; shareCount: number }[]>()
+    const map = new Map<string, { item: LineItem; shareCount: number; cents: number }[]>()
     for (const person of people) {
-      const personItems: { item: LineItem; shareCount: number }[] = []
+      const personItems: { item: LineItem; shareCount: number; cents: number }[] = []
       for (const item of lineItems) {
         const assignees = assignments[item.id] ?? []
         if (assignees.includes(person.id)) {
-          personItems.push({ item, shareCount: assignees.length })
+          personItems.push({
+            item,
+            shareCount: assignees.length,
+            cents: personItemCents(item, person.id, assignments, portions),
+          })
         }
       }
       map.set(person.id, personItems)
     }
     return map
-  }, [people, lineItems, assignments])
+  }, [people, lineItems, assignments, portions])
 
   // Auto-save to history on mount (once)
   useEffect(() => {
@@ -158,6 +161,7 @@ export default function SummaryPage() {
       people,
       lineItems,
       assignments: new Map(Object.entries(assignments)),
+      portions,
       tipConfig: {
         mode: 'per-person' as const,
         percentage: 12.5,
@@ -167,7 +171,7 @@ export default function SummaryPage() {
       ...(photos ? { photoDataUrls: photos } : {}),
     }
     saveSession(session)
-  }, [people, lineItems, assignments, splitResult.personTotals, saveSession])
+  }, [people, lineItems, assignments, portions, splitResult.personTotals, saveSession])
 
   function handleCopySummary() {
     const text = buildShareText({

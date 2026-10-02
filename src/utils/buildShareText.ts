@@ -1,5 +1,6 @@
 import type { LineItem, Person, PersonTotal } from '../types'
 import { formatCurrency } from './formatCurrency'
+import { allocateItemCents } from '../services/calculator/splitCalculator'
 
 interface ShareTextInput {
   lineItems: LineItem[]
@@ -54,8 +55,7 @@ export function buildShareText({
         const assignees = assignments[item.id] ?? []
         if (!assignees.includes(person.id)) continue
 
-        const shareCount = getShareCount(item.id, person.id, assignees, portions)
-        const itemTotal = Math.round(item.price * item.quantity * shareCount)
+        const itemTotal = itemShare(item, person.id, assignees, portions)
         const suffix = assignees.length > 1 ? ` (÷${assignees.length})` : ''
         lines.push(`  - ${item.name}${suffix} (${formatCurrency(itemTotal)})`)
       }
@@ -82,8 +82,7 @@ export function buildShareText({
         const assignees = assignments[item.id] ?? []
         if (!assignees.includes(person.id)) continue
 
-        const share = getShareCount(item.id, person.id, assignees, portions)
-        const itemTotal = Math.round(item.price * item.quantity * share)
+        const itemTotal = itemShare(item, person.id, assignees, portions)
         personSubtotal += itemTotal
         const suffix = assignees.length > 1 ? ` (÷${assignees.length})` : ''
         personItems.push(`  - ${item.name}${suffix} (${formatCurrency(itemTotal)})`)
@@ -146,22 +145,15 @@ export function buildShareText({
 }
 
 /**
- * Get a person's fractional share of an item, respecting custom portions.
+ * A person's share of an item in cents, respecting custom portions.
+ * Uses the same allocation as the split calculator so the numbers always match.
  */
-function getShareCount(
-  itemId: string,
+function itemShare(
+  item: LineItem,
   personId: string,
   assignees: string[],
   portions?: Record<string, Record<string, number>>
 ): number {
-  if (assignees.length === 0) return 0
-
-  const itemPortions = portions?.[itemId]
-  if (!itemPortions || Object.keys(itemPortions).length === 0) {
-    return 1 / assignees.length
-  }
-
-  const totalWeight = assignees.reduce((sum, id) => sum + (itemPortions[id] ?? 1), 0)
-  const personWeight = itemPortions[personId] ?? 1
-  return totalWeight > 0 ? personWeight / totalWeight : 1 / assignees.length
+  const shares = allocateItemCents(item.price * item.quantity, assignees, portions?.[item.id])
+  return shares[personId] ?? 0
 }

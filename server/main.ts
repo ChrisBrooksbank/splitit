@@ -173,6 +173,10 @@ function handleSocket(ws: WebSocket): void {
   })
 
   ws.addEventListener('close', () => {
+    // Drop this connection's rate-limit entries so the array doesn't retain closed sockets
+    for (let i = joinFailures.length - 1; i >= 0; i--) {
+      if (joinFailures[i].ws === ws) joinFailures.splice(i, 1)
+    }
     if (!myRoomCode || !myPeerId) return
     const room = rooms.get(myRoomCode)
     if (!room) return

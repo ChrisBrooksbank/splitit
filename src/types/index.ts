@@ -38,6 +38,7 @@ export interface BillSession {
   people: Person[]
   lineItems: LineItem[]
   assignments: Map<string, string[]>
+  portions?: Record<string, Record<string, number>> // custom split weights (itemId -> personId -> weight)
   tipConfig: TipConfig
   totals: PersonTotal[] // calculated summary
   photoDataUrls?: string[] // receipt photo thumbnails (base64 data URLs)
