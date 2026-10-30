@@ -1,5 +1,7 @@
 # SplitIt
 
+**Live demo:** [splitit-app.netlify.app](https://splitit-app.netlify.app)
+
 **Split restaurant bills fairly — snap a photo, claim your items, and let SplitIt handle the math.**
 
 A Progressive Web App that makes splitting the bill painless. Photograph a receipt, let OCR or your own AI (ChatGPT, Claude or Gemini) extract the line items, pass the phone around the table so everyone claims what they ordered, and get an instant per-person breakdown with proportional tax and tip.
