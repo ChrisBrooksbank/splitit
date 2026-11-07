@@ -1,5 +1,9 @@
 # SplitIt
 
+<!-- hub-link -->
+> Part of [Chris's app hub](https://chrisbrooksbank-hub.netlify.app) - a directory of all my deployed apps.
+<!-- /hub-link -->
+
 **Live demo:** [splitit-app.netlify.app](https://splitit-app.netlify.app)
 
 **Split restaurant bills fairly — snap a photo, claim your items, and let SplitIt handle the math.**
